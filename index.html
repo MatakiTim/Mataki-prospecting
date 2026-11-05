@@ -113,8 +113,16 @@ function setCloudState(s){$('cloudState').textContent=s}
 function showAuth(message=''){$('authGate').style.display='grid';$('mainApp').style.display='none';$('authMessage').textContent=message;dataReady=false;setCloudState('Signed out')}
 function showApp(){$('authGate').style.display='none';$('mainApp').style.display='grid';setTimeout(()=>map.invalidateSize(),100)}
 function authMessage(s){$('authMessage').textContent=s}
-function statusValueToDb(s){return ({unvisited:'unvisited',visited:'visited',potential:'potential',follow:'follow_up',client:'active_client',notfit:'not_fit'})[s]||'unvisited'}
-function statusValueFromDb(s){return ({visited:'visited',potential:'potential',follow_up:'follow',active_client:'client',not_fit:'notfit'})[s]||'unvisited'}
+function statusValueToDb(s){
+ const key=String(s??'unvisited').trim().toLowerCase().replace(/[\s-]+/g,'_');
+ const map={unvisited:'unvisited',not_visited:'unvisited',not_yet_visited:'unvisited',visited:'visited',potential:'potential',potential_client:'potential',follow:'follow_up',follow_up:'follow_up',follow_up_required:'follow_up',client:'active_client',active_client:'active_client',notfit:'not_fit',not_fit:'not_fit',not_a_fit:'not_fit'};
+ if(!Object.prototype.hasOwnProperty.call(map,key))throw new Error('Unrecognised prospecting status: '+s+'. Please choose a status from the list and try again.');
+ return map[key];
+}
+function statusValueFromDb(s){
+ const map={unvisited:'unvisited',visited:'visited',potential:'potential',follow_up:'follow',active_client:'client',not_fit:'notfit'};
+ return map[String(s??'').trim().toLowerCase()]||'unvisited';
+}
 function quoteValueToDb(s){return ({'':'not_started','To prepare':'to_prepare','Sent':'sent','Accepted':'accepted','Declined':'declined'})[s]||'not_started'}
 function quoteValueFromDb(s){return ({not_started:'','to_prepare':'To prepare',sent:'Sent',accepted:'Accepted',declined:'Declined'})[s]??''}
 async function initializeWorkspace(){
@@ -179,9 +187,12 @@ async function persistRecord(r,id,p=null){
  let buildingId=r._cloudId||null;
  if(!buildingId&&osmId){const found=await supabaseClient.from('buildings').select('id').eq('organization_id',organizationId).eq('osm_way_id',Number(osmId)).maybeSingle();if(found.error)throw found.error;if(found.data)buildingId=found.data.id}
  let buildingResult;
- if(buildingId){buildingResult=await supabaseClient.from('buildings').update(payload).eq('id',buildingId).eq('organization_id',organizationId).select('id').single()}
- else{buildingResult=await supabaseClient.from('buildings').insert(payload).select('id').single()}
- if(buildingResult.error)throw buildingResult.error;buildingId=buildingResult.data.id;
+ if(buildingId){buildingResult=await supabaseClient.from('buildings').update(payload).eq('id',buildingId).eq('organization_id',organizationId).select('id,prospecting_status').single()}
+ else{buildingResult=await supabaseClient.from('buildings').insert(payload).select('id,prospecting_status').single()}
+ if(buildingResult.error)throw buildingResult.error;
+ if(buildingResult.data.prospecting_status!==payload.prospecting_status)throw new Error('Database status mismatch. Expected '+payload.prospecting_status+' but received '+buildingResult.data.prospecting_status+'.');
+ buildingId=buildingResult.data.id;
+ r.status=statusValueFromDb(buildingResult.data.prospecting_status);
  let contactId=r._contactId||null;
  if((r.contact||'').trim()){
   if(!contactId){const f=await supabaseClient.from('contacts').select('id').eq('organization_id',organizationId).eq('building_id',buildingId).order('created_at',{ascending:false}).limit(1).maybeSingle();if(f.error)throw f.error;if(f.data)contactId=f.data.id}
