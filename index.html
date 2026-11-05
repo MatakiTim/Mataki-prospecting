@@ -113,22 +113,16 @@ function setCloudState(s){$('cloudState').textContent=s}
 function showAuth(message=''){$('authGate').style.display='grid';$('mainApp').style.display='none';$('authMessage').textContent=message;dataReady=false;setCloudState('Signed out')}
 function showApp(){$('authGate').style.display='none';$('mainApp').style.display='grid';setTimeout(()=>map.invalidateSize(),100)}
 function authMessage(s){$('authMessage').textContent=s}
+function normaliseStatusKey(s){return String(s??'unvisited').toLowerCase().replace(/[^a-z0-9]/g,'')}
 function statusValueToDb(s){
- const key=String(s??'unvisited').trim().toLowerCase().replace(/[\s-]+/g,'_');
- const map={unvisited:'unvisited',not_visited:'unvisited',not_yet_visited:'unvisited',visited:'visited',potential:'potential',potential_client:'potential',follow:'follow_up',follow_up:'follow_up',follow_up_required:'follow_up',client:'active_client',active_client:'active_client',notfit:'not_fit',not_fit:'not_fit',not_a_fit:'not_fit'};
+ const key=normaliseStatusKey(s);
+ const map={unvisited:'unvisited',notvisited:'unvisited',notyetvisited:'unvisited',visited:'visited',potential:'potential',potentialclient:'potential',follow:'follow_up',followup:'follow_up',followuprequired:'follow_up',client:'active_client',activeclient:'active_client',notfit:'not_fit',notaFit:'not_fit',notafit:'not_fit'};
  if(!Object.prototype.hasOwnProperty.call(map,key))throw new Error('Unrecognised prospecting status: '+s+'. Please choose a status from the list and try again.');
  return map[key];
 }
 function statusValueFromDb(s){
- const key=String(s??'unvisited').trim().toLowerCase().replace(/[\s-]+/g,'_');
- const map={
-  unvisited:'unvisited',not_visited:'unvisited',not_yet_visited:'unvisited',
-  visited:'visited',
-  potential:'potential',potential_client:'potential',
-  follow_up:'follow',follow_up_required:'follow',
-  active_client:'client',client:'client',
-  not_fit:'notfit',not_a_fit:'notfit',notfit:'notfit'
- };
+ const key=normaliseStatusKey(s);
+ const map={unvisited:'unvisited',notvisited:'unvisited',notyetvisited:'unvisited',visited:'visited',potential:'potential',potentialclient:'potential',follow:'follow',followup:'follow',followuprequired:'follow',client:'client',activeclient:'client',notfit:'notfit',notafit:'notfit'};
  return map[key]||'unvisited';
 }
 function quoteValueToDb(s){return ({'':'not_started','To prepare':'to_prepare','Sent':'sent','Accepted':'accepted','Declined':'declined'})[s]||'not_started'}
@@ -200,7 +194,7 @@ async function persistRecord(r,id,p=null){
  if(buildingResult.error)throw buildingResult.error;
  if(statusValueToDb(statusValueFromDb(buildingResult.data.prospecting_status))!==payload.prospecting_status)throw new Error('Database status mismatch. Expected '+payload.prospecting_status+' but received '+buildingResult.data.prospecting_status+'.');
  buildingId=buildingResult.data.id;
- r.status=statusValueFromDb(buildingResult.data.prospecting_status);
+ r._dbStatus=String(buildingResult.data.prospecting_status??'<null>');r.status=statusValueFromDb(buildingResult.data.prospecting_status);
  let contactId=r._contactId||null;
  if((r.contact||'').trim()){
   if(!contactId){const f=await supabaseClient.from('contacts').select('id').eq('organization_id',organizationId).eq('building_id',buildingId).order('created_at',{ascending:false}).limit(1).maybeSingle();if(f.error)throw f.error;if(f.data)contactId=f.data.id}
@@ -225,7 +219,7 @@ function rebuildPins(){statusPins.clearLayers();pinIndex.clear();Object.entries(
 
 function style(p){const r=records[idOf(p)]||{};return {color:colour(r.status),weight:1.25,fillColor:colour(r.status),fillOpacity:r.status ? 0.35 : 0.12}}
 function stats(){const a=Object.values(records);$('nRecords').textContent=a.length;$('nPotential').textContent=a.filter(x=>x.status==='potential').length;$('nFollow').textContent=a.filter(x=>x.status==='follow').length;$('nVisited').textContent=a.filter(x=>x.status==='visited').length}
-function listRecords(){const el=$('recordList'),a=Object.entries(records).sort((x,y)=>(y[1].updatedAt||'').localeCompare(x[1].updatedAt||''));if(!a.length){el.innerHTML='<div class="muted">No records yet. Select a building on the map to get started.</div>';return}el.innerHTML=a.map(([id,r])=>`<div class="recorditem" data-id="${id}"><b>${esc(r.business||r.osmName||'Unnamed prospect')}</b><small>${esc(r.address||r.suburb||'Christchurch')} · ${esc(r.status||'unvisited')}</small></div>`).join('');el.querySelectorAll('[data-id]').forEach(n=>n.onclick=()=>{const r=records[n.dataset.id];if(r.lat&&r.lng){map.setView([r.lat,r.lng],18);openSaved(r,n.dataset.id);const pin=pinIndex.get(n.dataset.id);if(pin)pin.openTooltip();}})}
+function listRecords(){const el=$('recordList'),a=Object.entries(records).sort((x,y)=>(y[1].updatedAt||'').localeCompare(x[1].updatedAt||''));if(!a.length){el.innerHTML='<div class="muted">No records yet. Select a building on the map to get started.</div>';return}el.innerHTML=a.map(([id,r])=>`<div class="recorditem" data-id="${id}"><b>${esc(r.business||r.osmName||'Unnamed prospect')}</b><small>${esc(r.address||r.suburb||'Christchurch')} · ${esc(statusLabel(r.status))}</small></div>`).join('');el.querySelectorAll('[data-id]').forEach(n=>n.onclick=()=>{const r=records[n.dataset.id];if(r.lat&&r.lng){map.setView([r.lat,r.lng],18);openSaved(r,n.dataset.id);const pin=pinIndex.get(n.dataset.id);if(pin)pin.openTooltip();}})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',2600)}
 function status(s){$('status').textContent=s}
@@ -272,7 +266,7 @@ async function findBuildingAt(lat,lng){
 function distanceToWay(w,lat,lng){const pts=w.geometry||[];let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].lon,yi=pts[i].lat,xj=pts[j].lon,yj=pts[j].lat;const hit=((yi>lat)!==(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi+1e-12)+xi);if(hit)inside=!inside;}if(inside)return 0;let best=Infinity;for(const pt of pts){const d=Math.hypot((pt.lat-lat)*111000,(pt.lon-lng)*78000);if(d<best)best=d;}return best}
 function nearestPointOnWay(w,lat,lng){const pts=w.geometry||[];if(!pts.length)return {lat,lng};let best=pts[0],dist=Infinity;for(const pt of pts){const d=Math.hypot((pt.lat-lat)*111000,(pt.lon-lng)*78000);if(d<dist){dist=d;best=pt}}return {lat:best.lat,lng:best.lon}}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const [lat,lng]=b.dataset.view.split(',').map(Number);map.setView([lat,lng],16)});
-$('leadForm').onsubmit=async e=>{e.preventDefault();if(!selected||!dataReady)return;const id=selected.savedId||idOf(selected.p);const old=records[id]||{};const r={...old};['business','address','status','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>r[k]=$(k).value);const selectedStatus=r.status;r.lat=selected.ll.lat;r.lng=selected.ll.lng;r.osmId=selected.p?.id||old.osmId;r.osmName=selected.p?.tags?.name||old.osmName;r.suburb=selected.p?.tags?.['addr:suburb']||old.suburb;try{$('leadForm').querySelector('button[type=submit]').disabled=true;status('Saving to Mataki cloud…');await persistRecord(r,id,selected.p||null);if(r.status!==selectedStatus)throw new Error('Status mismatch: the form selected '+statusLabel(selectedStatus)+' but Supabase returned '+statusLabel(r.status)+'. No success was reported.');$('status').value=r.status;$('title').textContent=r.business||r.osmName||'Building record';status('Cloud record saved · '+statusLabel(r.status));toast('Saved to Mataki cloud: '+statusLabel(r.status))}catch(err){console.error(err);status('Save failed');toast('Could not save record: '+(err.message||'Unknown error'))}finally{$('leadForm').querySelector('button[type=submit]').disabled=false}};
+$('leadForm').onsubmit=async e=>{e.preventDefault();if(!selected||!dataReady)return;const id=selected.savedId||idOf(selected.p);const old=records[id]||{};const r={...old};['business','address','status','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>r[k]=$(k).value);const selectedStatus=r.status;r.lat=selected.ll.lat;r.lng=selected.ll.lng;r.osmId=selected.p?.id||old.osmId;r.osmName=selected.p?.tags?.name||old.osmName;r.suburb=selected.p?.tags?.['addr:suburb']||old.suburb;try{$('leadForm').querySelector('button[type=submit]').disabled=true;status('Saving to Mataki cloud…');await persistRecord(r,id,selected.p||null);if(r.status!==selectedStatus)throw new Error('Status mismatch: the form selected '+statusLabel(selectedStatus)+' but Supabase returned '+statusLabel(r.status)+'. No success was reported.');$('status').value=r.status;$('title').textContent=r.business||r.osmName||'Building record';status('Cloud record saved · '+statusLabel(r.status));toast('Saved: '+statusLabel(r.status)+' · DB: '+r._dbStatus)}catch(err){console.error(err);status('Save failed');toast('Could not save record: '+(err.message||'Unknown error'))}finally{$('leadForm').querySelector('button[type=submit]').disabled=false}};
 $('delete').onclick=async()=>{if(!selected)return;const id=selected.savedId||idOf(selected.p);if(!confirm('Delete this prospect record from the Mataki cloud database?'))return;try{const r=records[id];if(r?._cloudId){const q=await supabaseClient.from('buildings').delete().eq('id',r._cloudId).eq('organization_id',organizationId);if(q.error)throw q.error}delete records[id];saveAll();const pin=pinIndex.get(id);if(pin){statusPins.removeLayer(pin);pinIndex.delete(id)}if(selected.p)repaintBuilding(id,selected.p);$('empty').style.display='flex';$('formArea').style.display='none';toast('Record deleted from cloud')}catch(err){toast('Delete failed: '+err.message)}};
 $('directions').onclick=()=>{if(!selected)return;const r=records[selected.savedId||idOf(selected.p)]||{};const ll=selected.ll;if(ll)window.open(`https://www.google.com/maps/dir/?api=1&destination=${ll.lat},${ll.lng}`,'_blank','noopener')};
 $('close').onclick=()=>{$('rightPanel').classList.remove('open')};$('togglePanel').onclick=()=>{$('rightPanel').classList.toggle('open')};
