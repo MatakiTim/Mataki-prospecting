@@ -16,11 +16,12 @@ Run this migration only once on a new Mataki project. If it reports an error, st
 
 ## Apply the map extension migration
 
-After the initial schema succeeds, apply the second script:
+After the initial schema succeeds, apply these two scripts in order, each in a new SQL Editor query:
 
-`migrations/202611060002_prospecting_map_fields.sql`
+1. `migrations/202611060002_prospecting_map_fields.sql`
+2. `migrations/202611060003_unvisited_status.sql`
 
-Run it in a new SQL Editor query. It adds the OpenStreetMap way reference, captured map tags, prospect priority, quote workflow status, racking estimate, visit date and follow-up date to building records. It is safe to run once after the initial migration.
+The map-fields migration adds the OpenStreetMap way reference, captured map tags, prospect priority, quote workflow status, racking estimate, visit date and follow-up date. The status migration makes **Unvisited** distinct from **Potential client** on the map. Run each once, in order.
 
 ## What the initial migration creates
 
