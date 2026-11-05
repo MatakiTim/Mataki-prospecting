@@ -415,7 +415,7 @@ alter table public.documents enable row level security;
 revoke all on public.organizations, public.organization_memberships,
   public.businesses, public.buildings, public.contacts, public.visits,
   public.follow_ups, public.quotes, public.inspections, public.documents
-from anon;
+from anon, authenticated;
 
 grant select, update on public.organizations to authenticated;
 grant select on public.organization_memberships to authenticated;
