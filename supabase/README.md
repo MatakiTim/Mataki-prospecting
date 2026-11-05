@@ -14,7 +14,15 @@ This repository contains Mataki's initial database migration.
 
 Run this migration only once on a new Mataki project. If it reports an error, stop and share the exact error text rather than trying to rerun parts of the script.
 
-## What it creates
+## Apply the map extension migration
+
+After the initial schema succeeds, apply the second script:
+
+`migrations/202611060002_prospecting_map_fields.sql`
+
+Run it in a new SQL Editor query. It adds the OpenStreetMap way reference, captured map tags, prospect priority, quote workflow status, racking estimate, visit date and follow-up date to building records. It is safe to run once after the initial migration.
+
+## What the initial migration creates
 
 - Organisations and organisation memberships
 - Businesses and buildings, including map coordinates and GeoJSON building footprints
