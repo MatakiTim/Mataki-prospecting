@@ -120,8 +120,16 @@ function statusValueToDb(s){
  return map[key];
 }
 function statusValueFromDb(s){
- const map={unvisited:'unvisited',visited:'visited',potential:'potential',follow_up:'follow',active_client:'client',not_fit:'notfit'};
- return map[String(s??'').trim().toLowerCase()]||'unvisited';
+ const key=String(s??'unvisited').trim().toLowerCase().replace(/[\\s-]+/g,'_');
+ const map={
+  unvisited:'unvisited',not_visited:'unvisited',not_yet_visited:'unvisited',
+  visited:'visited',
+  potential:'potential',potential_client:'potential',
+  follow_up:'follow',follow_up_required:'follow',
+  active_client:'client',client:'client',
+  not_fit:'notfit',not_a_fit:'notfit',notfit:'notfit'
+ };
+ return map[key]||'unvisited';
 }
 function quoteValueToDb(s){return ({'':'not_started','To prepare':'to_prepare','Sent':'sent','Accepted':'accepted','Declined':'declined'})[s]||'not_started'}
 function quoteValueFromDb(s){return ({not_started:'','to_prepare':'To prepare',sent:'Sent',accepted:'Accepted',declined:'Declined'})[s]??''}
@@ -190,7 +198,7 @@ async function persistRecord(r,id,p=null){
  if(buildingId){buildingResult=await supabaseClient.from('buildings').update(payload).eq('id',buildingId).eq('organization_id',organizationId).select('id,prospecting_status').single()}
  else{buildingResult=await supabaseClient.from('buildings').insert(payload).select('id,prospecting_status').single()}
  if(buildingResult.error)throw buildingResult.error;
- if(buildingResult.data.prospecting_status!==payload.prospecting_status)throw new Error('Database status mismatch. Expected '+payload.prospecting_status+' but received '+buildingResult.data.prospecting_status+'.');
+ if(statusValueToDb(statusValueFromDb(buildingResult.data.prospecting_status))!==payload.prospecting_status)throw new Error('Database status mismatch. Expected '+payload.prospecting_status+' but received '+buildingResult.data.prospecting_status+'.');
  buildingId=buildingResult.data.id;
  r.status=statusValueFromDb(buildingResult.data.prospecting_status);
  let contactId=r._contactId||null;
