@@ -72,7 +72,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
  <div class="notice"><b>Data coverage note:</b> Footprints come from OpenStreetMap contributors. Industrial tags and building outlines are not complete everywhere and do not prove a building contains pallet racking. Verify the business and site details during prospecting.</div>
 </aside>
 <main class="mapbox">
- <div id="map"></div><div class="maptop"><div class="pill"><b>Christchurch</b> · zoom in to load building footprints</div><div class="pill" id="status">Starting map…</div></div><div class="mapbottom">Click a building outline or search an address; saved prospects appear as coloured pins</div><div class="toast" id="toast"></div>
+ <div id="map"></div><div class="maptop"><div class="pill"><b>Christchurch</b> · zoom in to load building footprints</div><div class="pill" id="mapStatus">Starting map…</div></div><div class="mapbottom">Click a building outline or search an address; saved prospects appear as coloured pins</div><div class="toast" id="toast"></div>
 </main>
 <aside class="side right" id="rightPanel">
  <div class="empty" id="empty"><div class="symbol">⌖</div><b>No building selected</b><p>Zoom into an industrial area and select a building outline to create a prospect record.</p></div>
@@ -99,7 +99,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=> {
-const APP_BUILD='STATUSDIAG_01';
+const APP_BUILD='STATUSFIX_ID_01';
 const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -223,7 +223,7 @@ function stats(){const a=Object.values(records);$('nRecords').textContent=a.leng
 function listRecords(){const el=$('recordList'),a=Object.entries(records).sort((x,y)=>(y[1].updatedAt||'').localeCompare(x[1].updatedAt||''));if(!a.length){el.innerHTML='<div class="muted">No records yet. Select a building on the map to get started.</div>';return}el.innerHTML=a.map(([id,r])=>`<div class="recorditem" data-id="${id}"><b>${esc(r.business||r.osmName||'Unnamed prospect')}</b><small>${esc(r.address||r.suburb||'Christchurch')} · ${esc(statusLabel(r.status))}</small></div>`).join('');el.querySelectorAll('[data-id]').forEach(n=>n.onclick=()=>{const r=records[n.dataset.id];if(r.lat&&r.lng){map.setView([r.lat,r.lng],18);openSaved(r,n.dataset.id);const pin=pinIndex.get(n.dataset.id);if(pin)pin.openTooltip();}})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',2600)}
-function status(s){$('status').textContent=s}
+function status(s){$('mapStatus').textContent=s}
 function isIndustrial(t){const b=String(t.building||'').toLowerCase(),u=String(t.landuse||'').toLowerCase(),n=String(t.name||'').toLowerCase();return /industrial|warehouse|factory|manufacture|hangar|commercial|retail|supermarket|office|storage/.test(b+' '+u+' '+n)}
 function openRecord(p,ll){selected={p,ll};const r=records[idOf(p)]||{};$('empty').style.display='none';$('formArea').style.display='block';$('rightPanel').classList.add('open');$('title').textContent=r.business||p.tags.name||'Building record';$('subtitle').textContent=[p.tags.building,p.tags.landuse,p.tags['addr:suburb']].filter(Boolean).join(' · ')||'OpenStreetMap building footprint';const mapFields={business:r.business??p.tags.name??'',address:r.address??addressFromTags(p.tags),status:r.status??'unvisited',priority:r.priority??'',contact:r.contact??'',role:r.role??'',phone:r.phone??'',email:r.email??'',visitDate:r.visitDate??'',followDate:r.followDate??'',quote:r.quote??'',racking:r.racking??'',notes:r.notes??''};Object.entries(mapFields).forEach(([k,v])=>$(k).value=v);$('meta').textContent='OpenStreetMap way ID: '+p.id+' · Cloud database record'}
 function addressFromTags(t){return [t['addr:housenumber'],t['addr:street'],t['addr:suburb']].filter(Boolean).join(' ')}
