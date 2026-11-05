@@ -99,6 +99,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=> {
+const APP_BUILD='21b2549c';
 const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -141,7 +142,7 @@ async function initializeWorkspace(){
   if(createError){initializing=false;setCloudState('Setup needed');showAuth('Could not create your Mataki workspace: '+createError.message);return}
   organizationId=newOrg;
  }else organizationId=membership.organization_id;
- $('brandSub').textContent='CHRISTCHURCH PROSPECTING · '+(currentUser.email||'SIGNED IN').toUpperCase();
+ $('brandSub').textContent='CHRISTCHURCH PROSPECTING · '+(currentUser.email||'SIGNED IN').toUpperCase()+' · BUILD '+APP_BUILD.toUpperCase();
  dataReady=true;initializing=false;showApp();setCloudState('Cloud connected');
  await reloadCloudRecords();
  startRealtime();
