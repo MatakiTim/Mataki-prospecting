@@ -262,7 +262,8 @@ create table public.quotes (
   constraint quotes_building_same_org
     foreign key (building_id, organization_id)
     references public.buildings (id, organization_id)
-    on delete set null (building_id)
+    on delete set null (building_id),
+  unique (id, organization_id)
 );
 
 create table public.inspections (
@@ -292,7 +293,8 @@ create table public.inspections (
   constraint inspections_building_same_org
     foreign key (building_id, organization_id)
     references public.buildings (id, organization_id)
-    on delete cascade
+    on delete cascade,
+  unique (id, organization_id)
 );
 
 create table public.documents (
