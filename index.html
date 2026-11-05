@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mataki Prospecting | Christchurch</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--forest:#173d32;--green:#2c6651;--mint:#e7f0eb;--paper:#f3f6f4;--line:#dce4df;--ink:#17231e;--muted:#68776f;--amber:#d5a23c;--blue:#4d91bf;--red:#bd6257;--client:#38856a}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,Arial,sans-serif;color:var(--ink);background:var(--paper)}button,input,select,textarea{font:inherit}button{cursor:pointer}
+.app{height:100%;display:grid;grid-template-rows:62px 1fr}.top{background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:10px}.brand{display:flex;align-items:center;gap:11px}.logo{width:34px;height:34px;border:1px solid #7d9a8d;border-radius:9px;display:grid;place-items:center;font-weight:900}.brand b{letter-spacing:.14em;font-size:14px}.brand small{display:block;color:#c6d8cf;font-size:9px;letter-spacing:.16em;margin-top:3px}.top-actions{display:flex;gap:7px}.top-actions button{background:transparent;color:white;border:1px solid #6d8c7e;border-radius:8px;padding:8px 11px;font-size:11px}
+.layout{min-height:0;display:grid;grid-template-columns:295px minmax(360px,1fr) 350px}.side{background:#fff;overflow:auto;padding:17px;border-right:1px solid var(--line)}.right{border-right:0;border-left:1px solid var(--line)}h1{font-size:19px;margin:0 0 5px;letter-spacing:-.03em}.muted{color:var(--muted);font-size:11px;line-height:1.5}.stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:15px 0}.stat{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fbfcfb}.stat b{font-size:22px;display:block}.stat span{font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}.label{font-size:10px;font-weight:800;color:#7a8982;letter-spacing:.12em;text-transform:uppercase;margin:17px 0 8px}
+input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padding:9px;background:#fff;color:var(--ink);font-size:12px;outline:none}input:focus,select:focus,textarea:focus{border-color:#67947f;box-shadow:0 0 0 3px #e8f1ec}.search{display:flex;gap:6px}.search input{flex:1;min-width:0}.btn{border:0;border-radius:7px;background:var(--green);color:#fff;padding:9px 12px;font-size:11px;font-weight:700}.btn.light{background:var(--mint);color:var(--forest);border:1px solid #d4e2d9}.btn.outline{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.danger{background:#fff0ee;color:#a24b42;border:1px solid #f0d2cd}.chips{display:flex;flex-wrap:wrap;gap:5px}.chips button{border:1px solid var(--line);background:#fff;border-radius:18px;padding:6px 8px;font-size:10px;color:#42534a}.legend{display:grid;gap:7px;font-size:10px;color:#526158}.legend span{display:flex;gap:8px;align-items:center}.dot{width:9px;height:9px;border-radius:50%}.rowcheck{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#526158;margin:9px 0}.rowcheck input{width:auto;accent-color:var(--green)}
+.mapbox{position:relative;min-width:0;min-height:0}#map{height:100%;width:100%;background:#e7ece9;cursor:grab}#map:active{cursor:grabbing}#map .leaflet-interactive{cursor:pointer!important}.maptop{position:absolute;z-index:500;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none;gap:8px}.pill{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;box-shadow:0 4px 18px #1b35251a;font-size:10px;pointer-events:auto}.mapbottom{position:absolute;z-index:500;bottom:12px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:10px;white-space:nowrap;box-shadow:0 4px 18px #1b35251a}
+.empty{height:100%;min-height:350px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:var(--muted);padding:20px}.empty .symbol{font-size:24px;background:var(--mint);border-radius:14px;padding:13px;margin-bottom:10px}.empty b{font-size:14px;color:var(--ink)}.empty p{font-size:11px;max-width:230px;line-height:1.5}
+.panelhead{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:13px}.panelhead h2{font-size:16px;margin:0 0 4px}.panelhead p{font-size:10px;color:var(--muted);margin:0;line-height:1.4}.close{border:0;border-radius:7px;background:#f0f4f1;width:28px;height:28px;font-size:18px;color:#506057}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fg{margin-bottom:9px}.fg.full{grid-column:1/-1}.fg label{display:block;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#68776f;margin-bottom:5px}.fg textarea{min-height:75px;resize:vertical}.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.meta{border-top:1px solid var(--line);margin-top:13px;padding-top:10px;font-size:9px;color:#849087;line-height:1.5}
+.records{display:grid;gap:6px}.recorditem{border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer}.recorditem:hover{border-color:#8cac9b;background:#f8fbf9}.recorditem b{font-size:11px;display:block}.recorditem small{font-size:9px;color:var(--muted)}.badge{font-size:9px;font-weight:800;border-radius:20px;padding:3px 7px;background:#edf1ee;color:#5d6b63}.badge.potential{background:#fff3d9;color:#8a641a}.badge.follow{background:#ffefed;color:#a54b40}.badge.visited{background:#e7f1f8;color:#3d7195}.badge.client{background:#e4f2eb;color:#317657}
+.notice{background:#f4f7f5;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:10px;line-height:1.45;color:#58665e;margin-top:12px}.toast{position:absolute;z-index:1000;bottom:45px;right:15px;background:var(--forest);color:#fff;padding:9px 12px;border-radius:8px;font-size:10px;display:none}
+@media(max-width:1050px){.layout{grid-template-columns:260px minmax(280px,1fr)}.right{position:absolute;right:0;top:62px;bottom:0;width:min(350px,90vw);z-index:700;box-shadow:-8px 0 24px #0002;display:none}.right.open{display:block}}
+@media(max-width:650px){.app{grid-template-rows:56px 1fr}.top{padding:0 10px}.top-actions button{font-size:9px;padding:7px}.layout{grid-template-columns:1fr;grid-template-rows:220px minmax(0,1fr)}.side{padding:11px 13px;border:0;border-bottom:1px solid var(--line)}.stats{grid-template-columns:repeat(4,1fr);margin:8px 0}.stat{padding:6px}.stat b{font-size:16px}.stat span{font-size:7px}.side .label{margin:9px 0 6px}.legend{display:none}.right{top:56px}}
+
+.authgate{position:fixed;inset:0;z-index:3000;background:linear-gradient(135deg,#eaf0ec,#f6f8f6);display:grid;place-items:center;padding:18px}
+.authcard{width:min(420px,100%);background:#fff;border:1px solid var(--line);border-radius:16px;padding:27px;box-shadow:0 18px 55px #173d3218}
+.authbrand{display:flex;align-items:center;gap:12px;margin-bottom:18px;color:var(--forest)}
+.authbrand .logo{background:var(--forest);color:#fff;border:0;width:42px;height:42px}
+.authcard h2{margin:0 0 7px;font-size:21px;color:var(--ink)}.authcard p{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 16px}
+.authcard .fg{margin-bottom:12px}.authcard .btn{width:100%;padding:11px}.authswitch{border:0;background:none;color:var(--green);font-weight:700;font-size:11px;margin-top:12px;width:100%}
+.authmessage{font-size:11px;line-height:1.5;margin-top:12px;color:#8a641a;min-height:16px}
+.cloudpill{border:1px solid #6d8c7e;border-radius:8px;padding:7px 9px;font-size:10px;color:#d6e5dc;white-space:nowrap}
+.top-actions button:disabled{opacity:.55;cursor:wait}
+@media(max-width:650px){.cloudpill{display:none}}
+</style>
+</head>
+<body>
+<div class="authgate" id="authGate">
+ <div class="authcard">
+  <div class="authbrand"><div class="logo">M</div><div><b style="letter-spacing:.14em">MATAKI</b><div class="muted">CLOUD PROSPECTING PLATFORM</div></div></div>
+  <h2 id="authTitle">Sign in to Mataki</h2>
+  <p id="authIntro">Access your Christchurch prospecting records securely from any device.</p>
+  <form id="authForm">
+   <div class="fg"><label for="authEmail">Email address</label><input id="authEmail" type="email" autocomplete="username" required placeholder="you@company.co.nz"></div>
+   <div class="fg"><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters"></div>
+   <button class="btn" type="submit" id="authSubmit">Sign in</button>
+  </form>
+  <button class="authswitch" id="authToggle" type="button">Create the first Mataki account</button>
+  <div class="authmessage" id="authMessage" role="status" aria-live="polite"></div>
+ </div>
+</div>
+<div class="app" id="mainApp" style="display:none">
+<header class="top">
+ <div class="brand"><div class="logo">M</div><div><b>MATAKI</b><small id="brandSub">CHRISTCHURCH PROSPECTING</small></div></div>
+ <div class="top-actions"><span class="cloudpill" id="cloudState">Connecting…</span><button id="syncNow">Sync</button><button id="export">Export backup</button><button id="importBtn">Import backup</button><button id="togglePanel">Record panel</button><button id="signOut">Sign out</button><input id="importFile" type="file" accept="application/json" hidden></div>
+</header>
+<div class="layout">
+<aside class="side">
+ <h1>Territory overview</h1><div class="muted">Industrial prospecting map · Christchurch, New Zealand</div>
+ <div class="stats">
+  <div class="stat"><b id="nRecords">0</b><span>Records</span></div><div class="stat"><b id="nPotential">0</b><span>Potential</span></div>
+  <div class="stat"><b id="nFollow">0</b><span>Follow-ups</span></div><div class="stat"><b id="nVisited">0</b><span>Visited</span></div>
+ </div>
+ <div class="label">Find an address or business</div><div class="search"><input id="searchText" placeholder="e.g. 23 Quadrant Drive"><button class="btn" id="searchGo">Go</button></div>
+ <div class="label">Industrial areas</div><div class="chips">
+  <button data-view="-43.546,172.520">Hornby</button><button data-view="-43.448,172.640">Belfast</button><button data-view="-43.550,172.690">Woolston</button><button data-view="-43.490,172.540">Airport / Dakota</button><button data-view="-43.550,172.470">Templeton</button><button data-view="-43.535,172.655">CBD fringe</button>
+ </div>
+ <div class="label">Map layers</div>
+ <div class="rowcheck"><label><input type="checkbox" id="allBuildings"> Show all mapped buildings</label><input type="checkbox" id="allBuildingsProxy" checked disabled></div>
+ <div class="muted">By default, the map requests OpenStreetMap building footprints tagged as industrial, warehouse, factory, commercial, retail or similar. Turn on all buildings to inspect every mapped building in the current view.</div>
+ <div class="label">Prospecting status</div><div class="legend">
+  <span><i class="dot" style="background:#8b9992"></i>No record / not visited</span><span><i class="dot" style="background:#4d91bf"></i>Visited</span><span><i class="dot" style="background:#d5a23c"></i>Potential client</span><span><i class="dot" style="background:#bd6257"></i>Follow-up required</span><span><i class="dot" style="background:#38856a"></i>Active client</span>
+ </div>
+ <div class="label">Saved prospects</div><div class="records" id="recordList"><div class="muted">No records yet. Select a building on the map to get started.</div></div>
+ <div class="notice"><b>Data coverage note:</b> Footprints come from OpenStreetMap contributors. Industrial tags and building outlines are not complete everywhere and do not prove a building contains pallet racking. Verify the business and site details during prospecting.</div>
+</aside>
+<main class="mapbox">
+ <div id="map"></div><div class="maptop"><div class="pill"><b>Christchurch</b> · zoom in to load building footprints</div><div class="pill" id="status">Starting map…</div></div><div class="mapbottom">Click a building outline or search an address; saved prospects appear as coloured pins</div><div class="toast" id="toast"></div>
+</main>
+<aside class="side right" id="rightPanel">
+ <div class="empty" id="empty"><div class="symbol">⌖</div><b>No building selected</b><p>Zoom into an industrial area and select a building outline to create a prospect record.</p></div>
+ <div id="formArea" style="display:none">
+  <div class="panelhead"><div><h2 id="title">Building record</h2><p id="subtitle">OpenStreetMap building footprint</p></div><button class="close" id="close">×</button></div>
+  <form id="leadForm">
+   <div class="fg"><label>Business / site name</label><input id="business" placeholder="Enter business name"></div>
+   <div class="fg"><label>Street address</label><input id="address" placeholder="Enter street address"></div>
+   <div class="formgrid">
+    <div class="fg"><label>Prospecting status</label><select id="status"><option value="unvisited">Not yet visited</option><option value="visited">Visited</option><option value="potential">Potential client</option><option value="follow">Follow-up required</option><option value="client">Active client</option><option value="notfit">Not a fit</option></select></div>
+    <div class="fg"><label>Potential</label><select id="priority"><option value="">Not assessed</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+    <div class="fg"><label>Contact person</label><input id="contact" placeholder="Name"></div><div class="fg"><label>Role / position</label><input id="role" placeholder="Warehouse manager"></div>
+    <div class="fg"><label>Phone</label><input id="phone" type="tel" placeholder="Phone number"></div><div class="fg"><label>Email</label><input id="email" type="email" placeholder="Email address"></div>
+    <div class="fg"><label>Date visited</label><input id="visitDate" type="date"></div><div class="fg"><label>Follow-up date</label><input id="followDate" type="date"></div>
+    <div class="fg"><label>Quote status</label><select id="quote"><option value="">Not started</option><option>To prepare</option><option>Sent</option><option>Accepted</option><option>Declined</option></select></div><div class="fg"><label>Racking estimate</label><input id="racking" placeholder="e.g. 120 linear metres"></div>
+    <div class="fg full"><label>Visit notes / next action</label><textarea id="notes" placeholder="Who did you speak to? What did you learn? What needs to happen next?"></textarea></div>
+   </div>
+   <div class="actions"><button class="btn" type="submit">Save record</button><button class="btn light" type="button" id="directions">Directions</button><button class="btn danger" type="button" id="delete">Delete</button></div>
+  </form><div class="meta" id="meta"></div>
+ </div>
+</aside>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(()=> {
+const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const map=L.map('map',{preferCanvas:true}).setView([-43.5321,172.6362],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+const layer=L.featureGroup().addTo(map), statusPins=L.layerGroup().addTo(map), pinIndex=new Map(), canvas=L.canvas({padding:.4});
+let records={},selected=null,loaded=new Set(),timer=null,busy=false,previousBox='',currentUser=null,organizationId=null,dataReady=false,initializing=false,authMode='signin',channel=null;
+const $=id=>document.getElementById(id);
+function saveAll(){stats();listRecords()}
+function idOf(p){return 'osm-way-'+p.id}
+function setCloudState(s){$('cloudState').textContent=s}
+function showAuth(message=''){$('authGate').style.display='grid';$('mainApp').style.display='none';$('authMessage').textContent=message;dataReady=false;setCloudState('Signed out')}
+function showApp(){$('authGate').style.display='none';$('mainApp').style.display='grid';setTimeout(()=>map.invalidateSize(),100)}
+function authMessage(s){$('authMessage').textContent=s}
+function statusValueToDb(s){return ({unvisited:'unvisited',visited:'visited',potential:'potential',follow:'follow_up',client:'active_client',notfit:'not_fit'})[s]||'unvisited'}
+function statusValueFromDb(s){return ({visited:'visited',potential:'potential',follow_up:'follow',active_client:'client',not_fit:'notfit'})[s]||'unvisited'}
+function quoteValueToDb(s){return ({'':'not_started','To prepare':'to_prepare','Sent':'sent','Accepted':'accepted','Declined':'declined'})[s]||'not_started'}
+function quoteValueFromDb(s){return ({not_started:'','to_prepare':'To prepare',sent:'Sent',accepted:'Accepted',declined:'Declined'})[s]??''}
+async function initializeWorkspace(){
+ if(dataReady||initializing)return;
+ initializing=true;
+ setCloudState('Connecting…');
+ const {data:userData,error:userError}=await supabaseClient.auth.getUser();
+ if(userError||!userData.user){initializing=false;showAuth();return}
+ currentUser=userData.user;
+ let {data:membership,error:memberError}=await supabaseClient.from('organization_memberships').select('organization_id,role').eq('user_id',currentUser.id).limit(1).maybeSingle();
+ if(memberError){initializing=false;setCloudState('Database error');showAuth('Could not check your workspace: '+memberError.message);return}
+ if(!membership){
+  const {data:newOrg,error:createError}=await supabaseClient.rpc('create_workspace',{workspace_name:'Mataki'});
+  if(createError){initializing=false;setCloudState('Setup needed');showAuth('Could not create your Mataki workspace: '+createError.message);return}
+  organizationId=newOrg;
+ }else organizationId=membership.organization_id;
+ $('brandSub').textContent='CHRISTCHURCH PROSPECTING · '+(currentUser.email||'SIGNED IN').toUpperCase();
+ dataReady=true;initializing=false;showApp();setCloudState('Cloud connected');
+ await reloadCloudRecords();
+ startRealtime();
+ setTimeout(fetchBuildings,400);
+}
+async function reloadCloudRecords(){
+ if(!organizationId)return;
+ setCloudState('Syncing…');
+ const {data:buildingRows,error:buildingError}=await supabaseClient.from('buildings').select('*').eq('organization_id',organizationId).order('updated_at',{ascending:false}).range(0,1999);
+ if(buildingError){setCloudState('Sync error');toast('Could not load records: '+buildingError.message);return}
+ const businessIds=[...new Set((buildingRows||[]).map(x=>x.business_id).filter(Boolean))];
+ const buildingIds=(buildingRows||[]).map(x=>x.id);
+ let businessRows=[],contactRows=[];
+ if(businessIds.length){const q=await supabaseClient.from('businesses').select('id,name,phone,email,status').eq('organization_id',organizationId).in('id',businessIds);if(q.error){setCloudState('Sync error');toast('Could not load businesses: '+q.error.message);return}businessRows=q.data||[]}
+ if(buildingIds.length){const q=await supabaseClient.from('contacts').select('id,business_id,building_id,first_name,last_name,job_title,phone,email').eq('organization_id',organizationId).in('building_id',buildingIds).order('created_at',{ascending:false});if(q.error){setCloudState('Sync error');toast('Could not load contacts: '+q.error.message);return}contactRows=q.data||[]}
+ const businessMap=new Map(businessRows.map(x=>[x.id,x]));const contactMap=new Map();contactRows.forEach(x=>{if(x.building_id&&!contactMap.has(x.building_id))contactMap.set(x.building_id,x)});
+ const fresh={};
+ (buildingRows||[]).forEach(row=>{
+  const b=businessMap.get(row.business_id)||{};const c=contactMap.get(row.id)||{};
+  const id=row.osm_way_id?'osm-way-'+row.osm_way_id:'building-'+row.id;
+  fresh[id]={business:b.name||row.building_name||row.osm_name||'',address:row.street_address||'',status:statusValueFromDb(row.prospecting_status),priority:row.priority||'',contact:[c.first_name,c.last_name].filter(Boolean).join(' '),role:c.job_title||'',phone:c.phone||b.phone||'',email:c.email||b.email||'',visitDate:row.visit_date||'',followDate:row.follow_up_date||'',quote:quoteValueFromDb(row.quote_status),racking:row.racking_estimate||'',notes:row.notes||'',lat:row.latitude,lng:row.longitude,osmId:row.osm_way_id,osmName:row.osm_name||'',suburb:row.suburb||'',updatedAt:row.updated_at,_cloudId:row.id,_businessId:row.business_id||null,_contactId:c.id||null};
+ });
+ records=fresh;stats();listRecords();rebuildPins();
+ setCloudState('Cloud connected');
+}
+function startRealtime(){
+ if(channel) supabaseClient.removeChannel(channel);
+ channel=supabaseClient.channel('mataki-buildings-'+organizationId).on('postgres_changes',{event:'*',schema:'public',table:'buildings',filter:'organization_id=eq.'+organizationId},()=>{reloadCloudRecords()}).subscribe();
+}
+async function persistRecord(r,id,p=null){
+ if(!organizationId)throw new Error('No Mataki workspace is connected.');
+ const businessName=(r.business||r.osmName||'').trim();let businessId=r._businessId||null;
+ const businessStatus=r.status==='client'?'active_client':r.status==='notfit'?'not_a_fit':'prospect';
+ if(businessName){
+  const bpayload={organization_id:organizationId,name:businessName,phone:r.phone||null,email:r.email||null,status:businessStatus};
+  if(businessId){const q=await supabaseClient.from('businesses').update(bpayload).eq('id',businessId).eq('organization_id',organizationId).select('id').single();if(q.error)throw q.error;}
+  else {const found=await supabaseClient.from('businesses').select('id').eq('organization_id',organizationId).eq('name',businessName).limit(1).maybeSingle();if(found.error)throw found.error;
+   if(found.data){businessId=found.data.id;const q=await supabaseClient.from('businesses').update(bpayload).eq('id',businessId).select('id').single();if(q.error)throw q.error;}
+   else {const q=await supabaseClient.from('businesses').insert(bpayload).select('id').single();if(q.error)throw q.error;businessId=q.data.id;}
+  }
+ }
+ const osmId=r.osmId??p?.id??null;
+ const payload={organization_id:organizationId,business_id:businessId,building_name:businessName||'Unidentified building',street_address:r.address||null,suburb:r.suburb||p?.tags?.['addr:suburb']||null,city:'Christchurch',latitude:Number.isFinite(Number(r.lat))?Number(r.lat):null,longitude:Number.isFinite(Number(r.lng))?Number(r.lng):null,osm_way_id:osmId?Number(osmId):null,osm_name:r.osmName||p?.tags?.name||null,osm_tags:p?.tags||null,prospecting_status:statusValueToDb(r.status),priority:r.priority||null,quote_status:quoteValueToDb(r.quote),racking_estimate:r.racking||null,visit_date:r.visitDate||null,follow_up_date:r.followDate||null,notes:r.notes||null};
+  if(p&&p.geometry){const ring=p.geometry.map(pt=>[pt.lon,pt.lat]);if(ring.length&& (ring[0][0]!==ring[ring.length-1][0]||ring[0][1]!==ring[ring.length-1][1]))ring.push(ring[0]);payload.footprint_geojson={type:'Feature',properties:{osm_way_id:p.id,tags:p.tags||{}},geometry:{type:'Polygon',coordinates:[ring]}}}
+ let buildingId=r._cloudId||null;
+ if(!buildingId&&osmId){const found=await supabaseClient.from('buildings').select('id').eq('organization_id',organizationId).eq('osm_way_id',Number(osmId)).maybeSingle();if(found.error)throw found.error;if(found.data)buildingId=found.data.id}
+ let buildingResult;
+ if(buildingId){buildingResult=await supabaseClient.from('buildings').update(payload).eq('id',buildingId).eq('organization_id',organizationId).select('id').single()}
+ else{buildingResult=await supabaseClient.from('buildings').insert(payload).select('id').single()}
+ if(buildingResult.error)throw buildingResult.error;buildingId=buildingResult.data.id;
+ let contactId=r._contactId||null;
+ if((r.contact||'').trim()){
+  if(!contactId){const f=await supabaseClient.from('contacts').select('id').eq('organization_id',organizationId).eq('building_id',buildingId).order('created_at',{ascending:false}).limit(1).maybeSingle();if(f.error)throw f.error;if(f.data)contactId=f.data.id}
+  const parts=r.contact.trim().split(/\s+/);const cdata={organization_id:organizationId,business_id:businessId,building_id:buildingId,first_name:parts.shift(),last_name:parts.join(' ')||null,job_title:r.role||null,phone:r.phone||null,email:r.email||null,is_primary:true};
+  const cq=contactId?await supabaseClient.from('contacts').update(cdata).eq('id',contactId).eq('organization_id',organizationId).select('id').single():await supabaseClient.from('contacts').insert(cdata).select('id').single();
+  if(cq.error)throw cq.error;contactId=cq.data.id;
+ }
+ r._cloudId=buildingId;r._businessId=businessId;r._contactId=contactId;r.osmId=osmId;r.updatedAt=new Date().toISOString();records[id]=r;saveAll();updatePin(id,r);if(p)repaintBuilding(id,p);return r;
+}
+function colour(s){return ({visited:'#4d91bf',potential:'#d5a23c',follow:'#bd6257',client:'#38856a',notfit:'#a7aaa8'})[s]||'#8b9992'}
+function statusLabel(s){return ({visited:'Visited',potential:'Potential client',follow:'Follow-up required',client:'Active client',notfit:'Not a fit'})[s]||'Not yet visited'}
+function updatePin(id,r){
+ const existing=pinIndex.get(id);if(existing){statusPins.removeLayer(existing);pinIndex.delete(id)}
+ if(r.lat===null||r.lng===null||r.lat===undefined||r.lng===undefined||!Number.isFinite(Number(r.lat))||!Number.isFinite(Number(r.lng)))return;
+ const c=colour(r.status),label=r.business||r.osmName||'Mataki prospect';
+ const pin=L.circleMarker([Number(r.lat),Number(r.lng)],{radius:8,color:'#ffffff',weight:2,opacity:1,fillColor:c,fillOpacity:1});
+ pin.bindTooltip(esc(label)+' · '+esc(statusLabel(r.status)),{direction:'top',offset:[0,-7]});
+ pin.on('click',()=>{openSaved(r,id);});
+ pin.addTo(statusPins);pinIndex.set(id,pin);
+}
+function rebuildPins(){statusPins.clearLayers();pinIndex.clear();Object.entries(records).forEach(([id,r])=>updatePin(id,r))}
+
+function style(p){const r=records[idOf(p)]||{};return {color:colour(r.status),weight:1.25,fillColor:colour(r.status),fillOpacity:r.status ? 0.35 : 0.12}}
+function stats(){const a=Object.values(records);$('nRecords').textContent=a.length;$('nPotential').textContent=a.filter(x=>x.status==='potential').length;$('nFollow').textContent=a.filter(x=>x.status==='follow').length;$('nVisited').textContent=a.filter(x=>x.visitDate||x.status==='visited').length}
+function listRecords(){const el=$('recordList'),a=Object.entries(records).sort((x,y)=>(y[1].updatedAt||'').localeCompare(x[1].updatedAt||''));if(!a.length){el.innerHTML='<div class="muted">No records yet. Select a building on the map to get started.</div>';return}el.innerHTML=a.map(([id,r])=>`<div class="recorditem" data-id="${id}"><b>${esc(r.business||r.osmName||'Unnamed prospect')}</b><small>${esc(r.address||r.suburb||'Christchurch')} · ${esc(r.status||'unvisited')}</small></div>`).join('');el.querySelectorAll('[data-id]').forEach(n=>n.onclick=()=>{const r=records[n.dataset.id];if(r.lat&&r.lng){map.setView([r.lat,r.lng],18);openSaved(r,n.dataset.id);const pin=pinIndex.get(n.dataset.id);if(pin)pin.openTooltip();}})}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',2600)}
+function status(s){$('status').textContent=s}
+function isIndustrial(t){const b=String(t.building||'').toLowerCase(),u=String(t.landuse||'').toLowerCase(),n=String(t.name||'').toLowerCase();return /industrial|warehouse|factory|manufacture|hangar|commercial|retail|supermarket|office|storage/.test(b+' '+u+' '+n)}
+function openRecord(p,ll){selected={p,ll};const r=records[idOf(p)]||{};$('empty').style.display='none';$('formArea').style.display='block';$('rightPanel').classList.add('open');$('title').textContent=r.business||p.tags.name||'Building record';$('subtitle').textContent=[p.tags.building,p.tags.landuse,p.tags['addr:suburb']].filter(Boolean).join(' · ')||'OpenStreetMap building footprint';const mapFields={business:r.business??p.tags.name??'',address:r.address??addressFromTags(p.tags),status:r.status??'unvisited',priority:r.priority??'',contact:r.contact??'',role:r.role??'',phone:r.phone??'',email:r.email??'',visitDate:r.visitDate??'',followDate:r.followDate??'',quote:r.quote??'',racking:r.racking??'',notes:r.notes??''};Object.entries(mapFields).forEach(([k,v])=>$(k).value=v);$('meta').textContent='OpenStreetMap way ID: '+p.id+' · Cloud database record'}
+function addressFromTags(t){return [t['addr:housenumber'],t['addr:street'],t['addr:suburb']].filter(Boolean).join(' ')}
+function openSaved(r,id){selected={savedId:id,ll:{lat:r.lat,lng:r.lng}};$('empty').style.display='none';$('formArea').style.display='block';$('rightPanel').classList.add('open');$('title').textContent=r.business||r.osmName||'Saved prospect';$('subtitle').textContent='Saved prospect record';['business','address','status','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>$(k).value=r[k]??(k==='status'?'unvisited':''));$('meta').textContent='Cloud database record · '+(r._cloudId||id)}
+function geoFromWay(w){if(!w.geometry||w.geometry.length<3)return null;const coords=w.geometry.map(p=>[p.lon,p.lat]);if(coords[0][0]!==coords.at(-1)[0]||coords[0][1]!==coords.at(-1)[1])coords.push(coords[0]);return {type:'Feature',properties:{id:w.id,tags:w.tags||{}},geometry:{type:'Polygon',coordinates:[coords]}}}
+function addWay(w,force=false){const id='osm-way-'+w.id;if(loaded.has(id)){return layer.getLayers().find(x=>x._matakiId===id)||null}const tags=w.tags||{};if(!force&&!$('allBuildings').checked&&!isIndustrial(tags))return null;const f=geoFromWay(w);if(!f)return null;loaded.add(id);const p={id:w.id,tags,geometry:w.geometry};const l=L.geoJSON(f,{renderer:canvas,style:()=>style(p),onEachFeature:(feature,sub)=>{sub.on('click',e=>{openRecord(p,e.latlng);L.DomUtil.addClass(map.getContainer(),'building-hover')});sub.on('mouseover',()=>{map.getContainer().style.cursor='pointer'});sub.on('mouseout',()=>{map.getContainer().style.cursor='grab'})}});l._matakiId=id;l._matakiProps=p;l.eachLayer(sub=>{sub._matakiId=id;sub._matakiProps=p;sub.bindTooltip(esc(tags.name||tags.building||'Building footprint'),{sticky:true})});layer.addLayer(l);return l}
+function repaintBuilding(id,p){const featureGroup=layer.getLayers().find(x=>x._matakiId===id);if(!featureGroup)return false;const paint=sub=>{if(typeof sub.setStyle==='function')sub.setStyle(style(p));if(typeof sub.eachLayer==='function')sub.eachLayer(child=>paint(child))};paint(featureGroup);return true}
+async function fetchBuildings(){if(map.getZoom()<15){status('Zoom in to level 15+ for footprints');return}if(busy)return;const b=map.getBounds().pad(.04),box=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(n=>n.toFixed(4)).join(',');if(box===previousBox)return;previousBox=box;busy=true;status('Loading OpenStreetMap footprints…');const query=`[out:json][timeout:25];way["building"](${box});out tags geom;`;const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];let ok=false;for(const ep of endpoints){try{const res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)});if(!res.ok)throw new Error('HTTP '+res.status);const data=await res.json();(data.elements||[]).forEach(addWay);status(`${layer.getLayers().length.toLocaleString()} footprints loaded in this session`);ok=true;break}catch(e){}}if(!ok){status('Building data service unavailable');toast('Could not retrieve building footprints. The street map should still work; try again in a moment.');previousBox=''}busy=false}
+map.on('moveend',()=>{clearTimeout(timer);timer=setTimeout(fetchBuildings,350)});
+$('allBuildings').onchange=()=>{layer.clearLayers();loaded.clear();previousBox='';fetchBuildings()};
+$('searchGo').onclick=searchAddress;$('searchText').onkeydown=e=>{if(e.key==='Enter')searchAddress()};
+async function searchAddress(){
+ const q=$('searchText').value.trim();if(!q)return;
+ try{
+  status('Finding address…');
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q+', Christchurch, New Zealand'),{headers:{'Accept-Language':'en-NZ'}});
+  const a=await r.json();if(!a.length){status('Address not found');toast('Address not found');return}
+  const lat=+a[0].lat,lng=+a[0].lon;map.setView([lat,lng],19);status('Finding nearest building…');
+  const nearby=await findBuildingAt(lat,lng);
+  if(nearby){
+   const p={id:nearby.id,tags:nearby.tags||{},geometry:nearby.geometry};const l=addWay(nearby,true);
+   const ll=nearestPointOnWay(nearby,lat,lng);
+   if(l){map.fitBounds(l.getBounds().pad(.18));openRecord(p,ll||{lat,lng});l.setStyle({color:'#e07b24',weight:3,fillColor:'#f5bd70',fillOpacity:.45});setTimeout(()=>l.setStyle(style(p)),3500);status('Building selected from address search');toast('Nearest building selected — enter prospect details')}
+   else{openRecord(p,{lat,lng});status('Building record opened')}
+  }else{
+   status('Address found · no mapped building nearby');toast('Address found, but no building footprint was returned. Zoom in and select a nearby building, or try a street address.')
+  }
+ }catch(e){status('Address search unavailable');toast('Address search failed. Check your internet connection and try again.')}
+}
+async function findBuildingAt(lat,lng){
+ const query=`[out:json][timeout:20];way(around:90,${lat},${lng})["building"];out tags geom;`;
+ const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+ for(const ep of endpoints){try{
+  const res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)});
+  if(!res.ok)continue;const data=await res.json();const ways=(data.elements||[]).filter(w=>w.type==='way'&&w.geometry&&w.geometry.length>=3);
+  if(!ways.length)continue;
+  ways.sort((a,b)=>distanceToWay(a,lat,lng)-distanceToWay(b,lat,lng));return ways[0];
+ }catch(e){}}
+ return null;
+}
+function distanceToWay(w,lat,lng){const pts=w.geometry||[];let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].lon,yi=pts[i].lat,xj=pts[j].lon,yj=pts[j].lat;const hit=((yi>lat)!==(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi+1e-12)+xi);if(hit)inside=!inside;}if(inside)return 0;let best=Infinity;for(const pt of pts){const d=Math.hypot((pt.lat-lat)*111000,(pt.lon-lng)*78000);if(d<best)best=d;}return best}
+function nearestPointOnWay(w,lat,lng){const pts=w.geometry||[];if(!pts.length)return {lat,lng};let best=pts[0],dist=Infinity;for(const pt of pts){const d=Math.hypot((pt.lat-lat)*111000,(pt.lon-lng)*78000);if(d<dist){dist=d;best=pt}}return {lat:best.lat,lng:best.lon}}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const [lat,lng]=b.dataset.view.split(',').map(Number);map.setView([lat,lng],16)});
+$('leadForm').onsubmit=async e=>{e.preventDefault();if(!selected||!dataReady)return;const id=selected.savedId||idOf(selected.p);const old=records[id]||{};const r={...old};['business','address','status','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>r[k]=$(k).value);r.lat=selected.ll.lat;r.lng=selected.ll.lng;r.osmId=selected.p?.id||old.osmId;r.osmName=selected.p?.tags?.name||old.osmName;r.suburb=selected.p?.tags?.['addr:suburb']||old.suburb;try{$('leadForm').querySelector('button[type=submit]').disabled=true;status('Saving to Mataki cloud…');await persistRecord(r,id,selected.p||null);$('title').textContent=r.business||r.osmName||'Building record';status('Cloud record saved');toast('Record saved securely to Mataki cloud')}catch(err){console.error(err);status('Save failed');toast('Could not save record: '+(err.message||'Unknown error'))}finally{$('leadForm').querySelector('button[type=submit]').disabled=false}};
+$('delete').onclick=async()=>{if(!selected)return;const id=selected.savedId||idOf(selected.p);if(!confirm('Delete this prospect record from the Mataki cloud database?'))return;try{const r=records[id];if(r?._cloudId){const q=await supabaseClient.from('buildings').delete().eq('id',r._cloudId).eq('organization_id',organizationId);if(q.error)throw q.error}delete records[id];saveAll();const pin=pinIndex.get(id);if(pin){statusPins.removeLayer(pin);pinIndex.delete(id)}if(selected.p)repaintBuilding(id,selected.p);$('empty').style.display='flex';$('formArea').style.display='none';toast('Record deleted from cloud')}catch(err){toast('Delete failed: '+err.message)}};
+$('directions').onclick=()=>{if(!selected)return;const r=records[selected.savedId||idOf(selected.p)]||{};const ll=selected.ll;if(ll)window.open(`https://www.google.com/maps/dir/?api=1&destination=${ll.lat},${ll.lng}`,'_blank','noopener')};
+$('close').onclick=()=>{$('rightPanel').classList.remove('open')};$('togglePanel').onclick=()=>{$('rightPanel').classList.toggle('open')};
+$('syncNow').onclick=async()=>{try{await reloadCloudRecords();toast('Cloud records refreshed')}catch(e){toast('Sync failed: '+e.message)}};
+$('signOut').onclick=async()=>{await supabaseClient.auth.signOut();records={};currentUser=null;organizationId=null;channel=null;showAuth('You have been signed out.')};
+$('export').onclick=()=>{const data={app:'Mataki Prospecting',version:3,exportedAt:new Date().toISOString(),records};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mataki-prospecting-cloud-backup.json';a.click();URL.revokeObjectURL(a.href);toast('Cloud backup exported')};
+$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text()),incoming=d.records||d;if(!incoming||typeof incoming!=='object')throw new Error('Invalid record file');if(confirm('Import these records into the Mataki cloud? Existing matching OpenStreetMap building IDs will be updated.')){let count=0;for(const [oldId,value] of Object.entries(incoming)){const r={...value};const p=null;const id=r.osmId?'osm-way-'+r.osmId:oldId;await persistRecord(r,id,p);count++}await reloadCloudRecords();toast(count+' records imported to cloud')}}catch(err){toast('Import failed: '+err.message)}e.target.value=''};
+$('authToggle').onclick=()=>{authMode=authMode==='signin'?'signup':'signin';$('authTitle').textContent=authMode==='signin'?'Sign in to Mataki':'Create your Mataki account';$('authIntro').textContent=authMode==='signin'?'Access your Christchurch prospecting records securely from any device.':'Set up the owner account for your Mataki cloud workspace.';$('authSubmit').textContent=authMode==='signin'?'Sign in':'Create account';$('authToggle').textContent=authMode==='signin'?'Create the first Mataki account':'Back to sign in';$('authPassword').value='';authMessage('')};
+$('authForm').onsubmit=async e=>{e.preventDefault();const email=$('authEmail').value.trim(),password=$('authPassword').value;$('authSubmit').disabled=true;authMessage('Connecting securely…');try{if(authMode==='signup'){const {data,error}=await supabaseClient.auth.signUp({email,password});if(error)throw error;if(data.session){authMessage('Account created. Opening Mataki…');await initializeWorkspace()}else{authMessage('Account created. Check your email to confirm your address, then return here and sign in.')}}else{const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;authMessage('Signed in. Loading your workspace…');await initializeWorkspace()}}catch(err){authMessage(err.message||'Authentication failed.')}finally{$('authSubmit').disabled=false}};
+supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){records={};organizationId=null;currentUser=null;showAuth()}else if(session&&!dataReady){setTimeout(()=>initializeWorkspace(),0)}});
+(async()=>{const {data,error}=await supabaseClient.auth.getSession();if(error){showAuth(error.message);return}if(data.session){await initializeWorkspace()}else{showAuth()}})();
+})();
+</script>
+</body></html>
