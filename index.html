@@ -120,7 +120,7 @@ function statusValueToDb(s){
  return map[key];
 }
 function statusValueFromDb(s){
- const key=String(s??'unvisited').trim().toLowerCase().replace(/[\\s-]+/g,'_');
+ const key=String(s??'unvisited').trim().toLowerCase().replace(/[\s-]+/g,'_');
  const map={
   unvisited:'unvisited',not_visited:'unvisited',not_yet_visited:'unvisited',
   visited:'visited',
