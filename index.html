@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mataki Prospecting | Christchurch</title>
+<title>Mataki | NZ Customer Status</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{--forest:#173d32;--green:#2c6651;--mint:#e7f0eb;--paper:#f3f6f4;--line:#dce4df;--ink:#17231e;--muted:#68776f;--amber:#d5a23c;--blue:#4d91bf;--red:#bd6257;--client:#38856a}
@@ -142,7 +142,7 @@ async function initializeWorkspace(){
   if(createError){initializing=false;setCloudState('Setup needed');showAuth('Could not create your Mataki workspace: '+createError.message);return}
   organizationId=newOrg;
  }else organizationId=membership.organization_id;
- $('brandSub').textContent='CHRISTCHURCH PROSPECTING · '+(currentUser.email||'SIGNED IN').toUpperCase()+' · BUILD '+APP_BUILD.toUpperCase();
+ $('brandSub').textContent='NZ CUSTOMER STATUS · '+(currentUser.email||'SIGNED IN').toUpperCase()+' · BUILD '+APP_BUILD.toUpperCase();
  dataReady=true;initializing=false;showApp();setCloudState('Cloud connected');
  await reloadCloudRecords();
  startRealtime();
