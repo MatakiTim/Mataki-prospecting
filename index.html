@@ -14,7 +14,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 .empty{height:100%;min-height:350px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:var(--muted);padding:20px}.empty .symbol{font-size:24px;background:var(--mint);border-radius:14px;padding:13px;margin-bottom:10px}.empty b{font-size:14px;color:var(--ink)}.empty p{font-size:11px;max-width:230px;line-height:1.5}
 .panelhead{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:13px}.panelhead h2{font-size:16px;margin:0 0 4px}.panelhead p{font-size:10px;color:var(--muted);margin:0;line-height:1.4}.close{border:0;border-radius:7px;background:#f0f4f1;width:28px;height:28px;font-size:18px;color:#506057}
 .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fg{margin-bottom:9px}.fg.full{grid-column:1/-1}.fg label{display:block;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#68776f;margin-bottom:5px}.fg textarea{min-height:75px;resize:vertical}.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.meta{border-top:1px solid var(--line);margin-top:13px;padding-top:10px;font-size:9px;color:#849087;line-height:1.5}
-.records{display:grid;gap:6px}.recorditem{border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer}.recorditem:hover{border-color:#8cac9b;background:#f8fbf9}.recorditem b{font-size:11px;display:block}.recorditem small{font-size:9px;color:var(--muted)}.badge{font-size:9px;font-weight:800;border-radius:20px;padding:3px 7px;background:#edf1ee;color:#5d6b63}.badge.potential{background:#fff3d9;color:#8a641a}.badge.follow{background:#ffefed;color:#a54b40}.badge.visited{background:#e7f1f8;color:#3d7195}.badge.client{background:#e4f2eb;color:#317657}
+.records{display:grid;gap:6px}.recorditem{border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer}.recorditem:hover{border-color:#8cac9b;background:#f8fbf9}.recorditem b{font-size:11px;display:block}.recorditem small{font-size:9px;color:var(--muted)}.badge{font-size:9px;font-weight:800;border-radius:20px;padding:3px 7px;background:#edf1ee;color:#5d6b63}.badge.potential{background:#fff3d9;color:#8a641a}.badge.follow{background:#fbe8f2;color:#a63875}.badge.notfit{background:#fdebed;color:#a82d3a}.badge.visited{background:#e7f1f8;color:#3d7195}.badge.client{background:#e4f2eb;color:#317657}
 .notice{background:#f4f7f5;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:10px;line-height:1.45;color:#58665e;margin-top:12px}.toast{position:absolute;z-index:1000;bottom:45px;right:15px;background:var(--forest);color:#fff;padding:9px 12px;border-radius:8px;font-size:10px;display:none}
 @media(max-width:1050px){.layout{grid-template-columns:260px minmax(280px,1fr)}.right{position:absolute;right:0;top:62px;bottom:0;width:min(350px,90vw);z-index:700;box-shadow:-8px 0 24px #0002;display:none}.right.open{display:block}}
 @media(max-width:650px){.app{grid-template-rows:56px 1fr}.top{padding:0 10px}.top-actions button{font-size:9px;padding:7px}.layout{grid-template-columns:1fr;grid-template-rows:220px minmax(0,1fr)}.side{padding:11px 13px;border:0;border-bottom:1px solid var(--line)}.stats{grid-template-columns:repeat(4,1fr);margin:8px 0}.stat{padding:6px}.stat b{font-size:16px}.stat span{font-size:7px}.side .label{margin:9px 0 6px}.legend{display:none}.right{top:56px}}
@@ -66,7 +66,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
  <div class="rowcheck"><label><input type="checkbox" id="allBuildings"> Show all mapped buildings</label><input type="checkbox" id="allBuildingsProxy" checked disabled></div>
  <div class="muted">By default, the map requests OpenStreetMap building footprints tagged as industrial, warehouse, factory, commercial, retail or similar. Turn on all buildings to inspect every mapped building in the current view.</div>
  <div class="label">Prospecting status</div><div class="legend">
-  <span><i class="dot" style="background:#8b9992"></i>No record / not visited</span><span><i class="dot" style="background:#4d91bf"></i>Visited</span><span><i class="dot" style="background:#d5a23c"></i>Potential client</span><span><i class="dot" style="background:#bd6257"></i>Follow-up required</span><span><i class="dot" style="background:#38856a"></i>Active client</span>
+  <span><i class="dot" style="background:#8b9992"></i>No record / not visited</span><span><i class="dot" style="background:#4d91bf"></i>Visited</span><span><i class="dot" style="background:#d5a23c"></i>Potential client</span><span><i class="dot" style="background:#d65c9e"></i>Follow-up required</span><span><i class="dot" style="background:#38856a"></i>Active client</span><span><i class="dot" style="background:#c94452"></i>Not a fit</span>
  </div>
  <div class="label">Saved prospects</div><div class="records" id="recordList"><div class="muted">No records yet. Select a building on the map to get started.</div></div>
  <div class="notice"><b>Data coverage note:</b> Footprints come from OpenStreetMap contributors. Industrial tags and building outlines are not complete everywhere and do not prove a building contains pallet racking. Verify the business and site details during prospecting.</div>
@@ -99,7 +99,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=> {
-const APP_BUILD='STATUSFIX_ID_01';
+const APP_BUILD='COLOUR_REFRESH_01';
 const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -205,7 +205,7 @@ async function persistRecord(r,id,p=null){
  }
  r._cloudId=buildingId;r._businessId=businessId;r._contactId=contactId;r.osmId=osmId;r.updatedAt=new Date().toISOString();records[id]=r;saveAll();updatePin(id,r);if(p)repaintBuilding(id,p);return r;
 }
-function colour(s){return ({visited:'#4d91bf',potential:'#d5a23c',follow:'#bd6257',client:'#38856a',notfit:'#a7aaa8'})[s]||'#8b9992'}
+function colour(s){return ({visited:'#4d91bf',potential:'#d5a23c',follow:'#d65c9e',client:'#38856a',notfit:'#c94452'})[s]||'#8b9992'}
 function statusLabel(s){return ({visited:'Visited',potential:'Potential client',follow:'Follow-up required',client:'Active client',notfit:'Not a fit'})[s]||'Not yet visited'}
 function updatePin(id,r){
  const existing=pinIndex.get(id);if(existing){statusPins.removeLayer(existing);pinIndex.delete(id)}
