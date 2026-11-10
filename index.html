@@ -42,6 +42,16 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 .authcard .fg{margin-bottom:12px}.authcard .btn{width:100%;padding:11px}.authswitch{border:0;background:none;color:var(--green);font-weight:700;font-size:11px;margin-top:12px;width:100%}
 .authmessage{font-size:11px;line-height:1.5;margin-top:12px;color:#8a641a;min-height:16px}
 .cloudpill{border:1px solid #6d8c7e;border-radius:8px;padding:7px 9px;font-size:10px;color:#d6e5dc;white-space:nowrap}
+.modal{position:fixed;inset:0;z-index:2500;background:#10271f88;display:grid;place-items:center;padding:18px}
+.modal[hidden]{display:none}
+.modal-card{width:min(480px,100%);max-height:min(85vh,680px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 18px 60px #0003}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.modal-head h2{font-size:17px;margin:0}
+.team-list{display:grid;gap:7px;margin-top:14px}
+.team-member{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:11px}
+.team-member span:last-child{color:var(--muted);text-transform:capitalize}
+.team-message{font-size:11px;line-height:1.5;color:#526158;margin-top:9px;min-height:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:14px}
 .top-actions button:disabled{opacity:.55;cursor:wait}
 @media(max-width:650px){.cloudpill{display:none}}
 </style>
@@ -64,8 +74,21 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <div class="app" id="mainApp" style="display:none">
 <header class="top">
  <div class="brand"><div class="logo">M</div><div><b>MATAKI</b><small id="brandSub">CHRISTCHURCH PROSPECTING</small></div></div>
- <div class="top-actions"><span class="cloudpill" id="cloudState">Connecting…</span><button id="syncNow">Sync</button><button id="export">Export backup</button><button id="importBtn">Import backup</button><button id="togglePanel">Record panel</button><button id="signOut">Sign out</button><input id="importFile" type="file" accept="application/json" hidden></div>
+ <div class="top-actions"><span class="cloudpill" id="cloudState">Connecting…</span><button id="teamBtn" style="display:none">Team</button><button id="syncNow">Sync</button><button id="export">Export backup</button><button id="importBtn">Import backup</button><button id="togglePanel">Record panel</button><button id="signOut">Sign out</button><input id="importFile" type="file" accept="application/json" hidden></div>
 </header>
+<div class="modal" id="teamModal" hidden>
+ <div class="modal-card">
+  <div class="modal-head"><h2>Mataki team</h2><button class="close" type="button" id="teamClose" aria-label="Close">×</button></div>
+  <p class="muted">Staff added here will share the same Mataki customer and prospect records. They must first create an account and confirm their email address.</p>
+  <form id="teamForm">
+   <div class="fg"><label for="teamEmail">Staff email address</label><input id="teamEmail" type="email" required placeholder="name@mataki.co.nz"></div>
+   <button class="btn" type="submit" id="teamAdd">Add staff member</button>
+  </form>
+  <div class="team-message" id="teamMessage" role="status" aria-live="polite"></div>
+  <div class="label">Current team</div>
+  <div class="team-list" id="teamMembers"><div class="muted">Loading team…</div></div>
+ </div>
+</div>
 <div class="layout">
 <aside class="side">
  <h1>National customer overview</h1><div class="muted">Nationwide prospecting and customer map · New Zealand</div>
@@ -122,14 +145,14 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=> {
-const APP_BUILD='REPITCH_MONTHS_01';
+const APP_BUILD='TEAM_WORKSPACE_01';
 const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const map=L.map('map',{preferCanvas:true}).setView([-41.3,172.5],5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
 const layer=L.featureGroup().addTo(map), statusPins=L.layerGroup().addTo(map), pinIndex=new Map(), canvas=L.canvas({padding:.4});
-let records={},selected=null,loaded=new Set(),timer=null,busy=false,previousBox='',currentUser=null,organizationId=null,dataReady=false,initializing=false,authMode='signin',channel=null;
+let records={},selected=null,loaded=new Set(),timer=null,busy=false,previousBox='',currentUser=null,organizationId=null,currentRole=null,dataReady=false,initializing=false,authMode='signin',channel=null;
 const $=id=>document.getElementById(id);
 function saveAll(){stats();listRecords()}
 function idOf(p){return 'osm-way-'+p.id}
@@ -158,13 +181,13 @@ async function initializeWorkspace(){
  const {data:userData,error:userError}=await supabaseClient.auth.getUser();
  if(userError||!userData.user){initializing=false;showAuth();return}
  currentUser=userData.user;
- let {data:membership,error:memberError}=await supabaseClient.from('organization_memberships').select('organization_id,role').eq('user_id',currentUser.id).limit(1).maybeSingle();
+ let {data:membership,error:memberError}=await supabaseClient.from('organization_memberships').select('organization_id,role,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).order('organization_id',{ascending:false}).limit(1).maybeSingle();
  if(memberError){initializing=false;setCloudState('Database error');showAuth('Could not check your workspace: '+memberError.message);return}
  if(!membership){
-  const {data:newOrg,error:createError}=await supabaseClient.rpc('create_workspace',{workspace_name:'Mataki'});
-  if(createError){initializing=false;setCloudState('Setup needed');showAuth('Could not create your Mataki workspace: '+createError.message);return}
-  organizationId=newOrg;
- }else organizationId=membership.organization_id;
+  organizationId=null;currentRole=null;initializing=false;showAuth('This account is not connected to a Mataki team yet. Ask a Mataki owner or administrator to add this email in the Team panel. Once added, sign in again or refresh this page.');return;
+ }
+ organizationId=membership.organization_id;currentRole=membership.role;
+ $('teamBtn').style.display=['owner','admin'].includes(currentRole)?'inline-block':'none';
  $('brandSub').textContent='NZ CUSTOMER STATUS · '+(currentUser.email||'SIGNED IN').toUpperCase()+' · BUILD '+APP_BUILD.toUpperCase();
  dataReady=true;initializing=false;showApp();setCloudState('Cloud connected');
  await reloadCloudRecords();
@@ -190,6 +213,47 @@ async function reloadCloudRecords(){
  });
  records=fresh;stats();listRecords();rebuildPins();
  setCloudState('Cloud connected');
+}
+async function loadTeamMembers(){
+ $('teamMembers').replaceChildren();
+ const {data,error}=await supabaseClient.rpc('list_workspace_members');
+ if(error){$('teamMembers').textContent='Could not load team: '+error.message;return}
+ if(!data||!data.length){$('teamMembers').textContent='No team members found.';return}
+ data.forEach(member=>{
+  const row=document.createElement('div');row.className='team-member';
+  const email=document.createElement('span');email.textContent=member.email||'Unknown email';
+  const role=document.createElement('span');role.textContent=member.role||'member';
+  row.append(email,role);$('teamMembers').append(row);
+ });
+}
+async function openTeam(){
+ $('teamModal').hidden=false;$('teamMessage').textContent='';$('teamEmail').value='';
+ await loadTeamMembers();
+}
+async function addTeamMember(event){
+ event.preventDefault();
+ const email=$('teamEmail').value.trim();
+ if(!email)return;
+ $('teamAdd').disabled=true;$('teamMessage').textContent='Checking account…';
+ try{
+  const previewResult=await supabaseClient.rpc('preview_workspace_member',{member_email:email});
+  if(previewResult.error)throw previewResult.error;
+  const preview=previewResult.data||{};
+  if(!preview.user_found)throw new Error('No registered account was found for '+email+'. Ask them to create an account and confirm their email first.');
+  if(preview.already_member){$('teamMessage').textContent=email+' is already a member of this Mataki workspace.';return}
+  if(Number(preview.other_workspace_count||0)>0){
+   const oldCount=Number(preview.existing_record_count||0);
+   const warning=oldCount>0
+    ? email+' already has '+oldCount+' record(s) in another workspace. Ask them to sign in to that workspace and export a backup BEFORE continuing. Their old data will not be deleted or automatically moved. Continue adding them to the shared Mataki workspace?'
+    : email+' already belongs to another empty workspace. Adding them here will make this shared Mataki workspace their active workspace. Continue?';
+   if(!confirm(warning)){$('teamMessage').textContent='No changes made.';return}
+  }
+  const added=await supabaseClient.rpc('add_workspace_member_by_email',{member_email:email});
+  if(added.error)throw added.error;
+  $('teamMessage').textContent='Added '+email+' to the shared Mataki workspace as a team member. They should refresh or sign in again.';
+  $('teamEmail').value='';await loadTeamMembers();
+ }catch(error){$('teamMessage').textContent=error.message||'Could not add this team member.'}
+ finally{$('teamAdd').disabled=false}
 }
 function startRealtime(){
  if(channel) supabaseClient.removeChannel(channel);
@@ -360,14 +424,15 @@ $('leadForm').onsubmit=async e=>{e.preventDefault();if(!selected||!dataReady)ret
 $('delete').onclick=async()=>{if(!selected)return;const id=selected.savedId||idOf(selected.p);if(!confirm('Delete this prospect record from the Mataki cloud database?'))return;try{const r=records[id];if(r?._cloudId){const q=await supabaseClient.from('buildings').delete().eq('id',r._cloudId).eq('organization_id',organizationId);if(q.error)throw q.error}delete records[id];saveAll();const pin=pinIndex.get(id);if(pin){statusPins.removeLayer(pin);pinIndex.delete(id)}if(selected.p)repaintBuilding(id,selected.p);$('empty').style.display='flex';$('formArea').style.display='none';toast('Record deleted from cloud')}catch(err){toast('Delete failed: '+err.message)}};
 $('directions').onclick=()=>{if(!selected)return;const r=records[selected.savedId||idOf(selected.p)]||{};const ll=selected.ll;if(ll)window.open(`https://www.google.com/maps/dir/?api=1&destination=${ll.lat},${ll.lng}`,'_blank','noopener')};
 $('close').onclick=()=>{$('rightPanel').classList.remove('open')};$('togglePanel').onclick=()=>{$('rightPanel').classList.toggle('open')};
+$('teamBtn').onclick=openTeam;$('teamClose').onclick=()=>$('teamModal').hidden=true;$('teamModal').addEventListener('click',e=>{if(e.target===$('teamModal'))$('teamModal').hidden=true});$('teamForm').onsubmit=addTeamMember;
 $('syncNow').onclick=async()=>{try{await reloadCloudRecords();toast('Cloud records refreshed')}catch(e){toast('Sync failed: '+e.message)}};
-$('signOut').onclick=async()=>{await supabaseClient.auth.signOut();records={};currentUser=null;organizationId=null;channel=null;showAuth('You have been signed out.')};
+$('signOut').onclick=async()=>{await supabaseClient.auth.signOut();records={};currentUser=null;organizationId=null;currentRole=null;channel=null;$('teamBtn').style.display='none';showAuth('You have been signed out.')};
 $('export').onclick=()=>{const data={app:'Mataki Prospecting',version:3,exportedAt:new Date().toISOString(),records};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mataki-prospecting-cloud-backup.json';a.click();URL.revokeObjectURL(a.href);toast('Cloud backup exported')};
-$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text()),incoming=d.records||d;if(!incoming||typeof incoming!=='object')throw new Error('Invalid record file');if(confirm('Import these records into the Mataki cloud? Existing matching OpenStreetMap building IDs will be updated.')){let count=0;for(const [oldId,value] of Object.entries(incoming)){const r={...value};const p=null;const id=r.osmId?'osm-way-'+r.osmId:oldId;await persistRecord(r,id,p);count++}await reloadCloudRecords();toast(count+' records imported to cloud')}}catch(err){toast('Import failed: '+err.message)}e.target.value=''};
+$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text()),incoming=d.records||d;if(!incoming||typeof incoming!=='object')throw new Error('Invalid record file');if(confirm('Import these records into the Mataki cloud? Existing matching OpenStreetMap building IDs will be updated.')){let count=0;for(const [oldId,value] of Object.entries(incoming)){const r={...value,_cloudId:null,_businessId:null,_contactId:null};const p=null;const id=r.osmId?'osm-way-'+r.osmId:oldId;await persistRecord(r,id,p);count++}await reloadCloudRecords();toast(count+' records imported to cloud')}}catch(err){toast('Import failed: '+err.message)}e.target.value=''};
 $('status').addEventListener('change',handleStatusChange);$('declinedDate').addEventListener('change',updateRepitchFields);$('repitchMonths').addEventListener('change',updateRepitchFields);
-$('authToggle').onclick=()=>{authMode=authMode==='signin'?'signup':'signin';$('authTitle').textContent=authMode==='signin'?'Sign in to Mataki':'Create your Mataki account';$('authIntro').textContent=authMode==='signin'?'Access your Christchurch prospecting records securely from any device.':'Set up the owner account for your Mataki cloud workspace.';$('authSubmit').textContent=authMode==='signin'?'Sign in':'Create account';$('authToggle').textContent=authMode==='signin'?'Create the first Mataki account':'Back to sign in';$('authPassword').value='';authMessage('')};
+$('authToggle').onclick=()=>{authMode=authMode==='signin'?'signup':'signin';$('authTitle').textContent=authMode==='signin'?'Sign in to Mataki':'Create your Mataki account';$('authIntro').textContent=authMode==='signin'?'Sign in to access your shared Mataki team workspace.':'Create your staff login. A Mataki owner or administrator must add your email to the team before you can see company records.';$('authSubmit').textContent=authMode==='signin'?'Sign in':'Create account';$('authToggle').textContent=authMode==='signin'?'Create a staff account':'Back to sign in';$('authPassword').value='';authMessage('')};
 $('authForm').onsubmit=async e=>{e.preventDefault();const email=$('authEmail').value.trim(),password=$('authPassword').value;$('authSubmit').disabled=true;authMessage('Connecting securely…');try{if(authMode==='signup'){const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+window.location.pathname}});if(error)throw error;if(data.session){authMessage('Account created. Opening Mataki…');await initializeWorkspace()}else{authMessage('Account created. Check your email to confirm your address, then return here and sign in.')}}else{const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;authMessage('Signed in. Loading your workspace…');await initializeWorkspace()}}catch(err){authMessage(err.message||'Authentication failed.')}finally{$('authSubmit').disabled=false}};
-supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){records={};organizationId=null;currentUser=null;showAuth()}else if(session&&!dataReady){setTimeout(()=>initializeWorkspace(),0)}});
+supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){records={};organizationId=null;currentUser=null;currentRole=null;$('teamBtn').style.display='none';showAuth()}else if(session&&!dataReady){setTimeout(()=>initializeWorkspace(),0)}});
 (async()=>{const {data,error}=await supabaseClient.auth.getSession();if(error){showAuth(error.message);return}if(data.session){await initializeWorkspace()}else{showAuth()}})();
 })();
 </script>
