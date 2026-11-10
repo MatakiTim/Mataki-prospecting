@@ -79,11 +79,15 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <div class="modal" id="teamModal" hidden>
  <div class="modal-card">
   <div class="modal-head"><h2>Mataki team</h2><button class="close" type="button" id="teamClose" aria-label="Close">×</button></div>
-  <p class="muted">Staff added here will share the same Mataki customer and prospect records. They must first create an account and confirm their email address.</p>
+  <p class="muted">Assign access according to each person's work. Staff must first create an account and confirm their email address.</p>
   <form id="teamForm">
-   <div class="fg"><label for="teamEmail">Staff email address</label><input id="teamEmail" type="email" required placeholder="name@mataki.co.nz"></div>
+   <div class="formgrid">
+    <div class="fg"><label for="teamEmail">Staff email address</label><input id="teamEmail" type="email" required placeholder="name@mataki.co.nz"></div>
+    <div class="fg"><label for="teamRole">Role</label><select id="teamRole"><option value="sales">Salesperson</option><option value="inspector">Inspector</option><option value="viewer">Viewer</option></select></div>
+   </div>
    <button class="btn" type="submit" id="teamAdd">Add staff member</button>
   </form>
+  <div class="notice">Owner: full control · Administrator: manage team and operations · Salesperson: prospecting and sales · Inspector: site and inspection work · Viewer: read-only.</div>
   <div class="team-message" id="teamMessage" role="status" aria-live="polite"></div>
   <div class="label">Current team</div>
   <div class="team-list" id="teamMembers"><div class="muted">Loading team…</div></div>
@@ -145,7 +149,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=> {
-const APP_BUILD='TEAM_WORKSPACE_01';
+const APP_BUILD='TEAM_ROLES_01';
 const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -187,8 +191,8 @@ async function initializeWorkspace(){
   organizationId=null;currentRole=null;initializing=false;showAuth('This account is not connected to a Mataki team yet. Ask a Mataki owner or administrator to add this email in the Team panel. Once added, sign in again or refresh this page.');return;
  }
  organizationId=membership.organization_id;currentRole=membership.role;
- $('teamBtn').style.display=['owner','admin'].includes(currentRole)?'inline-block':'none';
- $('brandSub').textContent='NZ CUSTOMER STATUS · '+(currentUser.email||'SIGNED IN').toUpperCase()+' · BUILD '+APP_BUILD.toUpperCase();
+ applyRoleUI();
+ $('brandSub').textContent='NZ CUSTOMER STATUS · '+(currentUser.email||'SIGNED IN').toUpperCase()+' · '+currentRole.toUpperCase()+' · BUILD '+APP_BUILD.toUpperCase();
  dataReady=true;initializing=false;showApp();setCloudState('Cloud connected');
  await reloadCloudRecords();
  startRealtime();
@@ -222,8 +226,29 @@ async function loadTeamMembers(){
  data.forEach(member=>{
   const row=document.createElement('div');row.className='team-member';
   const email=document.createElement('span');email.textContent=member.email||'Unknown email';
-  const role=document.createElement('span');role.textContent=member.role||'member';
-  row.append(email,role);$('teamMembers').append(row);
+  const controls=document.createElement('div');controls.style.display='flex';controls.style.alignItems='center';controls.style.gap='6px';
+  const roleNames={owner:'Owner',admin:'Administrator',sales:'Salesperson',inspector:'Inspector',viewer:'Viewer'};
+  if(member.role==='owner'||(currentRole==='admin'&&member.role==='admin')){
+   const role=document.createElement('span');role.textContent=roleNames[member.role]||member.role;controls.append(role);
+  }else{
+   const select=document.createElement('select');select.style.width='auto';select.style.minWidth='118px';
+   const options=currentRole==='owner'?['admin','sales','inspector','viewer']:['sales','inspector','viewer'];
+   options.forEach(value=>{const option=document.createElement('option');option.value=value;option.textContent=roleNames[value];select.append(option)});
+   select.value=member.role;
+   const save=document.createElement('button');save.type='button';save.className='btn light';save.textContent='Save';save.onclick=async()=>{
+    save.disabled=true;
+    try{const result=await supabaseClient.rpc('set_workspace_member_role',{member_email:member.email,new_role:select.value});if(result.error)throw result.error;$('teamMessage').textContent='Updated '+member.email+' to '+(roleNames[select.value]||select.value)+'.';await loadTeamMembers()}
+    catch(error){$('teamMessage').textContent=error.message||'Could not change this role.';save.disabled=false}
+   };
+   const remove=document.createElement('button');remove.type='button';remove.className='btn danger';remove.textContent='Remove';remove.onclick=async()=>{
+    if(!confirm('Remove '+member.email+' from the Mataki team? Their own login and any other workspace data will remain.'))return;
+    remove.disabled=true;
+    try{const result=await supabaseClient.rpc('remove_workspace_member',{member_email:member.email});if(result.error)throw result.error;$('teamMessage').textContent='Removed '+member.email+' from this Mataki team.';await loadTeamMembers()}
+    catch(error){$('teamMessage').textContent=error.message||'Could not remove this team member.';remove.disabled=false}
+   };
+   controls.append(select,save,remove);
+  }
+  row.append(email,controls);$('teamMembers').append(row);
  });
 }
 async function openTeam(){
@@ -232,7 +257,7 @@ async function openTeam(){
 }
 async function addTeamMember(event){
  event.preventDefault();
- const email=$('teamEmail').value.trim();
+ const email=$('teamEmail').value.trim(),requestedRole=$('teamRole').value;
  if(!email)return;
  $('teamAdd').disabled=true;$('teamMessage').textContent='Checking account…';
  try{
@@ -248,12 +273,26 @@ async function addTeamMember(event){
     : email+' already belongs to another empty workspace. Adding them here will make this shared Mataki workspace their active workspace. Continue?';
    if(!confirm(warning)){$('teamMessage').textContent='No changes made.';return}
   }
-  const added=await supabaseClient.rpc('add_workspace_member_by_email',{member_email:email});
+  const added=await supabaseClient.rpc('add_workspace_member_by_email',{member_email:email,member_role:requestedRole});
   if(added.error)throw added.error;
-  $('teamMessage').textContent='Added '+email+' to the shared Mataki workspace as a team member. They should refresh or sign in again.';
+  $('teamMessage').textContent='Added '+email+' to the shared Mataki workspace as '+requestedRole+'. They should refresh or sign in again.';
   $('teamEmail').value='';await loadTeamMembers();
  }catch(error){$('teamMessage').textContent=error.message||'Could not add this team member.'}
  finally{$('teamAdd').disabled=false}
+}
+function applyRoleUI(){
+ const isOwnerAdmin=['owner','admin'].includes(currentRole);
+ const canEditProspects=['owner','admin','sales'].includes(currentRole);
+ $('teamBtn').style.display=isOwnerAdmin?'inline-block':'none';
+ $('export').style.display=isOwnerAdmin?'':'none';
+ $('importBtn').style.display=isOwnerAdmin?'':'none';
+ const form=$('leadForm');
+ if(form){
+  form.querySelectorAll('input,select,textarea').forEach(el=>{el.disabled=!canEditProspects});
+  const save=form.querySelector('button[type="submit"]');
+  if(save)save.style.display=canEditProspects?'':'none';
+ }
+ $('delete').style.display=isOwnerAdmin?'':'none';
 }
 function startRealtime(){
  if(channel) supabaseClient.removeChannel(channel);
