@@ -14,7 +14,22 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 .empty{height:100%;min-height:350px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:var(--muted);padding:20px}.empty .symbol{font-size:24px;background:var(--mint);border-radius:14px;padding:13px;margin-bottom:10px}.empty b{font-size:14px;color:var(--ink)}.empty p{font-size:11px;max-width:230px;line-height:1.5}
 .panelhead{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:13px}.panelhead h2{font-size:16px;margin:0 0 4px}.panelhead p{font-size:10px;color:var(--muted);margin:0;line-height:1.4}.close{border:0;border-radius:7px;background:#f0f4f1;width:28px;height:28px;font-size:18px;color:#506057}
 .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fg{margin-bottom:9px}.fg.full{grid-column:1/-1}.fg label{display:block;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#68776f;margin-bottom:5px}.fg textarea{min-height:75px;resize:vertical}.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.meta{border-top:1px solid var(--line);margin-top:13px;padding-top:10px;font-size:9px;color:#849087;line-height:1.5}
-.records{display:grid;gap:6px}.recorditem{border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer}.recorditem:hover{border-color:#8cac9b;background:#f8fbf9}.recorditem b{font-size:11px;display:block}.recorditem small{font-size:9px;color:var(--muted)}.badge{font-size:9px;font-weight:800;border-radius:20px;padding:3px 7px;background:#edf1ee;color:#5d6b63}.badge.potential{background:#fff3d9;color:#8a641a}.badge.follow{background:#fbe8f2;color:#a63875}.badge.notfit{background:#fdebed;color:#a82d3a}.badge.visited{background:#e7f1f8;color:#3d7195}.badge.client{background:#e4f2eb;color:#317657}
+.records{display:grid;gap:7px}
+.status-folder{border:1px solid var(--line);border-radius:9px;background:#fff;overflow:hidden}
+.status-folder summary{list-style:none;display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;font-size:10px;font-weight:800;color:#34483e;user-select:none}
+.status-folder summary::-webkit-details-marker{display:none}
+.status-folder summary::after{content:'＋';margin-left:auto;color:#87948d;font-size:13px;font-weight:500}
+.status-folder[open] summary::after{content:'−'}
+.status-folder summary:hover{background:#f7faf8}
+.folder-dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+.folder-count{margin-left:auto;background:#edf2ee;color:#52645a;border-radius:12px;padding:2px 7px;font-size:9px;font-variant-numeric:tabular-nums}
+.status-folder[open] .folder-count{margin-left:0}
+.folder-items{display:grid;gap:5px;padding:0 7px 7px}
+.folder-empty{padding:5px 3px 7px;font-size:10px;color:var(--muted)}
+.recorditem{border:1px solid var(--line);border-radius:7px;padding:8px;cursor:pointer;background:#fff}
+.recorditem:hover{border-color:#8cac9b;background:#f8fbf9}
+.recorditem b{font-size:11px;display:block}
+.recorditem small{font-size:9px;color:var(--muted)}.badge{font-size:9px;font-weight:800;border-radius:20px;padding:3px 7px;background:#edf1ee;color:#5d6b63}.badge.potential{background:#fff3d9;color:#8a641a}.badge.follow{background:#fbe8f2;color:#a63875}.badge.notfit{background:#fdebed;color:#a82d3a}.badge.visited{background:#e7f1f8;color:#3d7195}.badge.client{background:#e4f2eb;color:#317657}
 .notice{background:#f4f7f5;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:10px;line-height:1.45;color:#58665e;margin-top:12px}.toast{position:absolute;z-index:1000;bottom:45px;right:15px;background:var(--forest);color:#fff;padding:9px 12px;border-radius:8px;font-size:10px;display:none}
 @media(max-width:1050px){.layout{grid-template-columns:260px minmax(280px,1fr)}.right{position:absolute;right:0;top:62px;bottom:0;width:min(350px,90vw);z-index:700;box-shadow:-8px 0 24px #0002;display:none}.right.open{display:block}}
 @media(max-width:650px){.app{grid-template-rows:56px 1fr}.top{padding:0 10px}.top-actions button{font-size:9px;padding:7px}.layout{grid-template-columns:1fr;grid-template-rows:220px minmax(0,1fr)}.side{padding:11px 13px;border:0;border-bottom:1px solid var(--line)}.stats{grid-template-columns:repeat(4,1fr);margin:8px 0}.stat{padding:6px}.stat b{font-size:16px}.stat span{font-size:7px}.side .label{margin:9px 0 6px}.legend{display:none}.right{top:56px}}
@@ -97,7 +112,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=> {
-const APP_BUILD='NZ_WIDE_01';
+const APP_BUILD='NZ_STATUS_FOLDERS_01';
 const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -218,7 +233,43 @@ function rebuildPins(){statusPins.clearLayers();pinIndex.clear();Object.entries(
 
 function style(p){const r=records[idOf(p)]||{};return {color:colour(r.status),weight:1.25,fillColor:colour(r.status),fillOpacity:r.status ? 0.35 : 0.12}}
 function stats(){const a=Object.values(records);$('nRecords').textContent=a.length;$('nPotential').textContent=a.filter(x=>x.status==='potential').length;$('nFollow').textContent=a.filter(x=>x.status==='follow').length;$('nVisited').textContent=a.filter(x=>x.status==='visited').length}
-function listRecords(){const el=$('recordList'),a=Object.entries(records).sort((x,y)=>(y[1].updatedAt||'').localeCompare(x[1].updatedAt||''));if(!a.length){el.innerHTML='<div class="muted">No records yet. Select a building on the map to get started.</div>';return}el.innerHTML=a.map(([id,r])=>`<div class="recorditem" data-id="${id}"><b>${esc(r.business||r.osmName||'Unnamed prospect')}</b><small>${esc(r.address||r.suburb||'Christchurch')} · ${esc(statusLabel(r.status))}</small></div>`).join('');el.querySelectorAll('[data-id]').forEach(n=>n.onclick=()=>{const r=records[n.dataset.id];if(r.lat&&r.lng){map.setView([r.lat,r.lng],18);openSaved(r,n.dataset.id);const pin=pinIndex.get(n.dataset.id);if(pin)pin.openTooltip();}})}
+const expandedStatusGroups=new Set();
+function listRecords(){
+ const el=$('recordList');
+ const folderDefs=[
+  {key:'unvisited',label:'Not yet visited'},
+  {key:'visited',label:'Visited'},
+  {key:'potential',label:'Potential client'},
+  {key:'follow',label:'Follow-up required'},
+  {key:'client',label:'Active client'},
+  {key:'notfit',label:'Not a fit'}
+ ];
+ const groups=Object.fromEntries(folderDefs.map(x=>[x.key,[]]));
+ Object.entries(records).forEach(([id,r])=>{
+  const key=Object.prototype.hasOwnProperty.call(groups,r.status)?r.status:'unvisited';
+  groups[key].push([id,r]);
+ });
+ Object.values(groups).forEach(items=>items.sort((x,y)=>(y[1].updatedAt||'').localeCompare(x[1].updatedAt||'')));
+ el.innerHTML=folderDefs.map(folder=>{
+  const items=groups[folder.key];
+  const cards=items.length?items.map(([id,r])=>`<div class="recorditem" data-id="${esc(id)}"><b>${esc(r.business||r.osmName||'Unnamed prospect')}</b><small>${esc([r.address||r.suburb,r.city].filter(Boolean).join(', ')||'New Zealand')}</small></div>`).join(''):'<div class="folder-empty">No prospects in this category yet.</div>';
+  const open=expandedStatusGroups.has(folder.key)?' open':'';
+  return `<details class="status-folder" data-status="${folder.key}"${open}><summary><i class="folder-dot" style="background:${colour(folder.key)}"></i><span>${folder.label}</span><span class="folder-count">${items.length}</span></summary><div class="folder-items">${cards}</div></details>`;
+ }).join('');
+ el.querySelectorAll('.status-folder').forEach(folder=>folder.addEventListener('toggle',()=>{
+  if(folder.open)expandedStatusGroups.add(folder.dataset.status);else expandedStatusGroups.delete(folder.dataset.status);
+ }));
+ el.querySelectorAll('[data-id]').forEach(node=>node.onclick=()=>{
+  const r=records[node.dataset.id];
+  if(!r)return;
+  if(Number.isFinite(Number(r.lat))&&Number.isFinite(Number(r.lng))){
+   map.setView([Number(r.lat),Number(r.lng)],18);
+   openSaved(r,node.dataset.id);
+   const pin=pinIndex.get(node.dataset.id);
+   if(pin)pin.openTooltip();
+  }
+ });
+}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',2600)}
 function status(s){$('mapStatus').textContent=s}
