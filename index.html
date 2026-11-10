@@ -29,7 +29,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 .recorditem{border:1px solid var(--line);border-radius:7px;padding:8px;cursor:pointer;background:#fff}
 .recorditem:hover{border-color:#8cac9b;background:#f8fbf9}
 .recorditem b{font-size:11px;display:block}
-.recorditem small{font-size:9px;color:var(--muted)}.badge{font-size:9px;font-weight:800;border-radius:20px;padding:3px 7px;background:#edf1ee;color:#5d6b63}.badge.potential{background:#fff3d9;color:#8a641a}.badge.follow{background:#fbe8f2;color:#a63875}.badge.notfit{background:#fdebed;color:#a82d3a}.badge.visited{background:#e7f1f8;color:#3d7195}.badge.client{background:#e4f2eb;color:#317657}
+.recorditem small{font-size:9px;color:var(--muted)}.badge{font-size:9px;font-weight:800;border-radius:20px;padding:3px 7px;background:#edf1ee;color:#5d6b63}.badge.potential{background:#fff3d9;color:#8a641a}.badge.follow{background:#fbe8f2;color:#a63875}.badge.notfit{background:#fdebed;color:#a82d3a}.badge.repitch{background:#eceefa;color:#58669c}.badge.visited{background:#e7f1f8;color:#3d7195}.badge.client{background:#e4f2eb;color:#317657}
 .notice{background:#f4f7f5;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:10px;line-height:1.45;color:#58665e;margin-top:12px}.toast{position:absolute;z-index:1000;bottom:45px;right:15px;background:var(--forest);color:#fff;padding:9px 12px;border-radius:8px;font-size:10px;display:none}
 @media(max-width:1050px){.layout{grid-template-columns:260px minmax(280px,1fr)}.right{position:absolute;right:0;top:62px;bottom:0;width:min(350px,90vw);z-index:700;box-shadow:-8px 0 24px #0002;display:none}.right.open{display:block}}
 @media(max-width:650px){.app{grid-template-rows:56px 1fr}.top{padding:0 10px}.top-actions button{font-size:9px;padding:7px}.layout{grid-template-columns:1fr;grid-template-rows:220px minmax(0,1fr)}.side{padding:11px 13px;border:0;border-bottom:1px solid var(--line)}.stats{grid-template-columns:repeat(4,1fr);margin:8px 0}.stat{padding:6px}.stat b{font-size:16px}.stat span{font-size:7px}.side .label{margin:9px 0 6px}.legend{display:none}.right{top:56px}}
@@ -78,7 +78,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
  <div class="rowcheck"><label><input type="checkbox" id="allBuildings"> Show all mapped buildings</label><input type="checkbox" id="allBuildingsProxy" checked disabled></div>
  <div class="muted">By default, the map requests OpenStreetMap building footprints tagged as industrial, warehouse, factory, commercial, retail or similar. Turn on all buildings to inspect every mapped building in the current view.</div>
  <div class="label">Prospecting status</div><div class="legend">
-  <span><i class="dot" style="background:#8b9992"></i>No record / not visited</span><span><i class="dot" style="background:#4d91bf"></i>Visited</span><span><i class="dot" style="background:#d5a23c"></i>Potential client</span><span><i class="dot" style="background:#d65c9e"></i>Follow-up required</span><span><i class="dot" style="background:#38856a"></i>Active client</span><span><i class="dot" style="background:#c94452"></i>Not a fit</span>
+  <span><i class="dot" style="background:#8b9992"></i>No record / not visited</span><span><i class="dot" style="background:#4d91bf"></i>Visited</span><span><i class="dot" style="background:#d5a23c"></i>Potential client</span><span><i class="dot" style="background:#d65c9e"></i>Follow-up required</span><span><i class="dot" style="background:#7886b5"></i>Re-pitch Later</span><span><i class="dot" style="background:#38856a"></i>Active client</span><span><i class="dot" style="background:#c94452"></i>Not a fit</span>
  </div>
  <div class="label">Saved prospects</div><div class="records" id="recordList"><div class="muted">No records yet. Select a building on the map to get started.</div></div>
  <div class="notice"><b>Data coverage note:</b> Footprints come from OpenStreetMap contributors. Industrial tags and building outlines are not complete everywhere and do not prove a building contains pallet racking. Verify the business and site details during prospecting.</div>
@@ -95,11 +95,20 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
    <div class="fg"><label>Street address</label><input id="address" placeholder="Enter street address"></div>
    <div class="formgrid">
     <div class="fg"><label>City / town</label><input id="city" placeholder="e.g. Auckland"></div>
-    <div class="fg"><label>Prospecting status</label><select id="status"><option value="unvisited">Not yet visited</option><option value="visited">Visited</option><option value="potential">Potential client</option><option value="follow">Follow-up required</option><option value="client">Active client</option><option value="notfit">Not a fit</option></select></div>
+    <div class="fg"><label>Prospecting status</label><select id="status"><option value="unvisited">Not yet visited</option><option value="visited">Visited</option><option value="potential">Potential client</option><option value="follow">Follow-up required</option><option value="repitch">Re-pitch Later</option><option value="client">Active client</option><option value="notfit">Not a fit</option></select></div>
     <div class="fg"><label>Potential</label><select id="priority"><option value="">Not assessed</option><option>High</option><option>Medium</option><option>Low</option></select></div>
     <div class="fg"><label>Contact person</label><input id="contact" placeholder="Name"></div><div class="fg"><label>Role / position</label><input id="role" placeholder="Warehouse manager"></div>
     <div class="fg"><label>Phone</label><input id="phone" type="tel" placeholder="Phone number"></div><div class="fg"><label>Email</label><input id="email" type="email" placeholder="Email address"></div>
     <div class="fg"><label>Date visited</label><input id="visitDate" type="date"></div><div class="fg"><label>Follow-up date</label><input id="followDate" type="date"></div>
+    <div class="fg full repitch-fields" id="repitchFields" style="display:none">
+     <div class="formgrid">
+      <div class="fg"><label>First contacted</label><input id="firstContactDate" type="date"></div>
+      <div class="fg"><label>Date declined</label><input id="declinedDate" type="date"></div>
+      <div class="fg"><label>Reason declined</label><select id="declineReason"><option value="">Select a reason</option><option value="Already have an inspection provider">Already have an inspection provider</option><option value="Recently signed a contract">Recently signed a contract</option><option value="Budget constraints">Budget constraints</option><option value="Not currently interested">Not currently interested</option><option value="Timing isn't right">Timing isn't right</option><option value="Other">Other</option></select></div>
+      <div class="fg"><label>Scheduled re-pitch date</label><input id="repitchDate" type="date" readonly></div>
+     </div>
+     <div class="muted">The re-pitch date is automatically scheduled for 12 months after the decline date. You can update the decline date if the original date was entered incorrectly.</div>
+    </div>
     <div class="fg"><label>Quote status</label><select id="quote"><option value="">Not started</option><option>To prepare</option><option>Sent</option><option>Accepted</option><option>Declined</option></select></div><div class="fg"><label>Racking estimate</label><input id="racking" placeholder="e.g. 120 linear metres"></div>
     <div class="fg full"><label>Visit notes / next action</label><textarea id="notes" placeholder="Who did you speak to? What did you learn? What needs to happen next?"></textarea></div>
    </div>
@@ -112,7 +121,7 @@ input,select,textarea{width:100%;border:1px solid #d5dfd9;border-radius:7px;padd
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=> {
-const APP_BUILD='NZ_STATUS_FOLDERS_01';
+const APP_BUILD='REPITCH_LATER_01';
 const SUPABASE_URL='https://uzrplwvoiwfpwafyduvr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_kMnzR06ADMZqLwoul5IAVA_l__b54vk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -130,13 +139,13 @@ function authMessage(s){$('authMessage').textContent=s}
 function normaliseStatusKey(s){return String(s??'unvisited').toLowerCase().replace(/[^a-z0-9]/g,'')}
 function statusValueToDb(s){
  const key=normaliseStatusKey(s);
- const map={unvisited:'unvisited',notvisited:'unvisited',notyetvisited:'unvisited',visited:'visited',potential:'potential',potentialclient:'potential',follow:'follow_up',followup:'follow_up',followuprequired:'follow_up',client:'active_client',activeclient:'active_client',notfit:'not_fit',notaFit:'not_fit',notafit:'not_fit'};
+ const map={unvisited:'unvisited',notvisited:'unvisited',notyetvisited:'unvisited',visited:'visited',potential:'potential',potentialclient:'potential',follow:'follow_up',followup:'follow_up',followuprequired:'follow_up',repitch:'repitch_later',repitchlater:'repitch_later',repitchlaterstatus:'repitch_later',client:'active_client',activeclient:'active_client',notfit:'not_fit',notaFit:'not_fit',notafit:'not_fit'};
  if(!Object.prototype.hasOwnProperty.call(map,key))throw new Error('Unrecognised prospecting status: '+s+'. Please choose a status from the list and try again.');
  return map[key];
 }
 function statusValueFromDb(s){
  const key=normaliseStatusKey(s);
- const map={unvisited:'unvisited',notvisited:'unvisited',notyetvisited:'unvisited',visited:'visited',potential:'potential',potentialclient:'potential',follow:'follow',followup:'follow',followuprequired:'follow',client:'client',activeclient:'client',notfit:'notfit',notafit:'notfit'};
+ const map={unvisited:'unvisited',notvisited:'unvisited',notyetvisited:'unvisited',visited:'visited',potential:'potential',potentialclient:'potential',follow:'follow',followup:'follow',followuprequired:'follow',repitchlater:'repitch',repitch:'repitch',client:'client',activeclient:'client',notfit:'notfit',notafit:'notfit'};
  return map[key]||'unvisited';
 }
 function quoteValueToDb(s){return ({'':'not_started','To prepare':'to_prepare','Sent':'sent','Accepted':'accepted','Declined':'declined'})[s]||'not_started'}
@@ -176,7 +185,7 @@ async function reloadCloudRecords(){
  (buildingRows||[]).forEach(row=>{
   const b=businessMap.get(row.business_id)||{};const c=contactMap.get(row.id)||{};
   const id=row.osm_way_id?'osm-way-'+row.osm_way_id:'building-'+row.id;
-  fresh[id]={business:b.name||row.building_name||row.osm_name||'',address:row.street_address||'',city:row.city||'',status:statusValueFromDb(row.prospecting_status),priority:row.priority||'',contact:[c.first_name,c.last_name].filter(Boolean).join(' '),role:c.job_title||'',phone:c.phone||b.phone||'',email:c.email||b.email||'',visitDate:row.visit_date||'',followDate:row.follow_up_date||'',quote:quoteValueFromDb(row.quote_status),racking:row.racking_estimate||'',notes:row.notes||'',lat:row.latitude,lng:row.longitude,osmId:row.osm_way_id,osmName:row.osm_name||'',suburb:row.suburb||'',updatedAt:row.updated_at,_cloudId:row.id,_businessId:row.business_id||null,_contactId:c.id||null};
+  fresh[id]={business:b.name||row.building_name||row.osm_name||'',address:row.street_address||'',city:row.city||'',status:statusValueFromDb(row.prospecting_status),firstContactDate:row.first_contact_date||'',declinedDate:row.declined_date||'',declineReason:row.decline_reason||'',repitchDate:row.repitch_date||'',priority:row.priority||'',contact:[c.first_name,c.last_name].filter(Boolean).join(' '),role:c.job_title||'',phone:c.phone||b.phone||'',email:c.email||b.email||'',visitDate:row.visit_date||'',followDate:row.follow_up_date||'',quote:quoteValueFromDb(row.quote_status),racking:row.racking_estimate||'',notes:row.notes||'',lat:row.latitude,lng:row.longitude,osmId:row.osm_way_id,osmName:row.osm_name||'',suburb:row.suburb||'',updatedAt:row.updated_at,_cloudId:row.id,_businessId:row.business_id||null,_contactId:c.id||null};
  });
  records=fresh;stats();listRecords();rebuildPins();
  setCloudState('Cloud connected');
@@ -198,17 +207,17 @@ async function persistRecord(r,id,p=null){
   }
  }
  const osmId=r.osmId??p?.id??null;
- const payload={organization_id:organizationId,business_id:businessId,building_name:businessName||'Unidentified building',street_address:r.address||null,suburb:r.suburb||p?.tags?.['addr:suburb']||null,city:(r.city||p?.tags?.['addr:city']||p?.tags?.['addr:town']||p?.tags?.['addr:village']||'Unspecified'),latitude:Number.isFinite(Number(r.lat))?Number(r.lat):null,longitude:Number.isFinite(Number(r.lng))?Number(r.lng):null,osm_way_id:osmId?Number(osmId):null,osm_name:r.osmName||p?.tags?.name||null,osm_tags:p?.tags||null,prospecting_status:statusValueToDb(r.status),priority:r.priority||null,quote_status:quoteValueToDb(r.quote),racking_estimate:r.racking||null,visit_date:r.visitDate||null,follow_up_date:r.followDate||null,notes:r.notes||null};
+ const payload={organization_id:organizationId,business_id:businessId,building_name:businessName||'Unidentified building',street_address:r.address||null,suburb:r.suburb||p?.tags?.['addr:suburb']||null,city:(r.city||p?.tags?.['addr:city']||p?.tags?.['addr:town']||p?.tags?.['addr:village']||'Unspecified'),latitude:Number.isFinite(Number(r.lat))?Number(r.lat):null,longitude:Number.isFinite(Number(r.lng))?Number(r.lng):null,osm_way_id:osmId?Number(osmId):null,osm_name:r.osmName||p?.tags?.name||null,osm_tags:p?.tags||null,prospecting_status:statusValueToDb(r.status),priority:r.priority||null,quote_status:quoteValueToDb(r.quote),racking_estimate:r.racking||null,visit_date:r.visitDate||null,follow_up_date:r.followDate||null,first_contact_date:r.firstContactDate||null,declined_date:r.declinedDate||null,decline_reason:r.declineReason||null,notes:r.notes||null};
   if(p&&p.geometry){const ring=p.geometry.map(pt=>[pt.lon,pt.lat]);if(ring.length&& (ring[0][0]!==ring[ring.length-1][0]||ring[0][1]!==ring[ring.length-1][1]))ring.push(ring[0]);payload.footprint_geojson={type:'Feature',properties:{osm_way_id:p.id,tags:p.tags||{}},geometry:{type:'Polygon',coordinates:[ring]}}}
  let buildingId=r._cloudId||null;
  if(!buildingId&&osmId){const found=await supabaseClient.from('buildings').select('id').eq('organization_id',organizationId).eq('osm_way_id',Number(osmId)).maybeSingle();if(found.error)throw found.error;if(found.data)buildingId=found.data.id}
  let buildingResult;
- if(buildingId){buildingResult=await supabaseClient.from('buildings').update(payload).eq('id',buildingId).eq('organization_id',organizationId).select('id,prospecting_status').single()}
- else{buildingResult=await supabaseClient.from('buildings').insert(payload).select('id,prospecting_status').single()}
+ if(buildingId){buildingResult=await supabaseClient.from('buildings').update(payload).eq('id',buildingId).eq('organization_id',organizationId).select('id,prospecting_status,first_contact_date,declined_date,decline_reason,repitch_date').single()}
+ else{buildingResult=await supabaseClient.from('buildings').insert(payload).select('id,prospecting_status,first_contact_date,declined_date,decline_reason,repitch_date').single()}
  if(buildingResult.error)throw buildingResult.error;
  if(statusValueToDb(statusValueFromDb(buildingResult.data.prospecting_status))!==payload.prospecting_status)throw new Error('Database status mismatch. Expected '+payload.prospecting_status+' but received '+buildingResult.data.prospecting_status+'.');
  buildingId=buildingResult.data.id;
- r._dbStatus=String(buildingResult.data.prospecting_status??'<null>');r.status=statusValueFromDb(buildingResult.data.prospecting_status);
+ r._dbStatus=String(buildingResult.data.prospecting_status??'<null>');r.status=statusValueFromDb(buildingResult.data.prospecting_status);r.firstContactDate=buildingResult.data.first_contact_date||'';r.declinedDate=buildingResult.data.declined_date||'';r.declineReason=buildingResult.data.decline_reason||'';r.repitchDate=buildingResult.data.repitch_date||'';
  let contactId=r._contactId||null;
  if((r.contact||'').trim()){
   if(!contactId){const f=await supabaseClient.from('contacts').select('id').eq('organization_id',organizationId).eq('building_id',buildingId).order('created_at',{ascending:false}).limit(1).maybeSingle();if(f.error)throw f.error;if(f.data)contactId=f.data.id}
@@ -218,8 +227,8 @@ async function persistRecord(r,id,p=null){
  }
  r._cloudId=buildingId;r._businessId=businessId;r._contactId=contactId;r.osmId=osmId;r.updatedAt=new Date().toISOString();records[id]=r;saveAll();updatePin(id,r);if(p)repaintBuilding(id,p);return r;
 }
-function colour(s){return ({visited:'#4d91bf',potential:'#d5a23c',follow:'#d65c9e',client:'#38856a',notfit:'#c94452'})[s]||'#8b9992'}
-function statusLabel(s){return ({visited:'Visited',potential:'Potential client',follow:'Follow-up required',client:'Active client',notfit:'Not a fit'})[s]||'Not yet visited'}
+function colour(s){return ({visited:'#4d91bf',potential:'#d5a23c',follow:'#d65c9e',repitch:'#7886b5',client:'#38856a',notfit:'#c94452'})[s]||'#8b9992'}
+function statusLabel(s){return ({visited:'Visited',potential:'Potential client',follow:'Follow-up required',repitch:'Re-pitch Later',client:'Active client',notfit:'Not a fit'})[s]||'Not yet visited'}
 function updatePin(id,r){
  const existing=pinIndex.get(id);if(existing){statusPins.removeLayer(existing);pinIndex.delete(id)}
  if(r.lat===null||r.lng===null||r.lat===undefined||r.lng===undefined||!Number.isFinite(Number(r.lat))||!Number.isFinite(Number(r.lng)))return;
@@ -241,6 +250,7 @@ function listRecords(){
   {key:'visited',label:'Visited'},
   {key:'potential',label:'Potential client'},
   {key:'follow',label:'Follow-up required'},
+  {key:'repitch',label:'Re-pitch Later'},
   {key:'client',label:'Active client'},
   {key:'notfit',label:'Not a fit'}
  ];
@@ -274,9 +284,37 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',2600)}
 function status(s){$('mapStatus').textContent=s}
 function isIndustrial(t){const b=String(t.building||'').toLowerCase(),u=String(t.landuse||'').toLowerCase(),n=String(t.name||'').toLowerCase();return /industrial|warehouse|factory|manufacture|hangar|commercial|retail|supermarket|office|storage/.test(b+' '+u+' '+n)}
-function openRecord(p,ll){selected={p,ll};const r=records[idOf(p)]||{};$('empty').style.display='none';$('formArea').style.display='block';$('rightPanel').classList.add('open');$('title').textContent=r.business||p.tags.name||'Building record';$('subtitle').textContent=[p.tags.building,p.tags.landuse,p.tags['addr:suburb']].filter(Boolean).join(' · ')||'OpenStreetMap building footprint';const mapFields={business:r.business??p.tags.name??'',address:r.address??addressFromTags(p.tags),city:r.city??p.tags['addr:city']??p.tags['addr:town']??p.tags['addr:village']??'',status:r.status??'unvisited',priority:r.priority??'',contact:r.contact??'',role:r.role??'',phone:r.phone??'',email:r.email??'',visitDate:r.visitDate??'',followDate:r.followDate??'',quote:r.quote??'',racking:r.racking??'',notes:r.notes??''};Object.entries(mapFields).forEach(([k,v])=>$(k).value=v);$('meta').textContent='OpenStreetMap way ID: '+p.id+' · Cloud database record'}
+function localTodayIso(){
+ const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function addTwelveMonthsIso(value){
+ if(!value)return '';
+ const parts=value.split('-').map(Number);
+ if(parts.length!==3||parts.some(n=>!Number.isFinite(n)))return '';
+ const year=parts[0],month=parts[1],day=parts[2];
+ const targetFirst=new Date(Date.UTC(year,month-1+12,1));
+ const lastDay=new Date(Date.UTC(targetFirst.getUTCFullYear(),targetFirst.getUTCMonth()+1,0)).getUTCDate();
+ const finalDay=Math.min(day,lastDay);
+ return targetFirst.getUTCFullYear()+'-'+String(targetFirst.getUTCMonth()+1).padStart(2,'0')+'-'+String(finalDay).padStart(2,'0');
+}
+function updateRepitchFields(){
+ const visible=$('status').value==='repitch';
+ $('repitchFields').style.display=visible?'block':'none';
+ if(visible){
+  const computed=addTwelveMonthsIso($('declinedDate').value);
+  $('repitchDate').value=computed||'';
+ }
+}
+function handleStatusChange(){
+ if($('status').value==='repitch'){
+  if(!$('declinedDate').value)$('declinedDate').value=localTodayIso();
+  if(!$('firstContactDate').value&&$('visitDate').value)$('firstContactDate').value=$('visitDate').value;
+ }
+ updateRepitchFields();
+}
+function openRecord(p,ll){selected={p,ll};const r=records[idOf(p)]||{};$('empty').style.display='none';$('formArea').style.display='block';$('rightPanel').classList.add('open');$('title').textContent=r.business||p.tags.name||'Building record';$('subtitle').textContent=[p.tags.building,p.tags.landuse,p.tags['addr:suburb']].filter(Boolean).join(' · ')||'OpenStreetMap building footprint';const mapFields={business:r.business??p.tags.name??'',address:r.address??addressFromTags(p.tags),city:r.city??p.tags['addr:city']??p.tags['addr:town']??p.tags['addr:village']??'',status:r.status??'unvisited',firstContactDate:r.firstContactDate??'',declinedDate:r.declinedDate??'',declineReason:r.declineReason??'',repitchDate:r.repitchDate??'',priority:r.priority??'',contact:r.contact??'',role:r.role??'',phone:r.phone??'',email:r.email??'',visitDate:r.visitDate??'',followDate:r.followDate??'',quote:r.quote??'',racking:r.racking??'',notes:r.notes??''};Object.entries(mapFields).forEach(([k,v])=>$(k).value=v);updateRepitchFields();$('meta').textContent='OpenStreetMap way ID: '+p.id+' · Cloud database record'}
 function addressFromTags(t){return [t['addr:housenumber'],t['addr:street'],t['addr:suburb']].filter(Boolean).join(' ')}
-function openSaved(r,id){selected={savedId:id,ll:{lat:r.lat,lng:r.lng}};$('empty').style.display='none';$('formArea').style.display='block';$('rightPanel').classList.add('open');$('title').textContent=r.business||r.osmName||'Saved prospect';$('subtitle').textContent='Saved prospect record';['business','address','city','status','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>$(k).value=r[k]??(k==='status'?'unvisited':''));$('meta').textContent='Cloud database record · '+(r._cloudId||id)}
+function openSaved(r,id){selected={savedId:id,ll:{lat:r.lat,lng:r.lng}};$('empty').style.display='none';$('formArea').style.display='block';$('rightPanel').classList.add('open');$('title').textContent=r.business||r.osmName||'Saved prospect';$('subtitle').textContent='Saved prospect record';['business','address','city','status','firstContactDate','declinedDate','declineReason','repitchDate','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>$(k).value=r[k]??(k==='status'?'unvisited':''));updateRepitchFields();$('meta').textContent='Cloud database record · '+(r._cloudId||id)}
 function geoFromWay(w){if(!w.geometry||w.geometry.length<3)return null;const coords=w.geometry.map(p=>[p.lon,p.lat]);if(coords[0][0]!==coords.at(-1)[0]||coords[0][1]!==coords.at(-1)[1])coords.push(coords[0]);return {type:'Feature',properties:{id:w.id,tags:w.tags||{}},geometry:{type:'Polygon',coordinates:[coords]}}}
 function addWay(w,force=false){const id='osm-way-'+w.id;if(loaded.has(id)){return layer.getLayers().find(x=>x._matakiId===id)||null}const tags=w.tags||{};if(!force&&!$('allBuildings').checked&&!isIndustrial(tags))return null;const f=geoFromWay(w);if(!f)return null;loaded.add(id);const p={id:w.id,tags,geometry:w.geometry};const l=L.geoJSON(f,{renderer:canvas,style:()=>style(p),onEachFeature:(feature,sub)=>{sub.on('click',e=>{openRecord(p,e.latlng);L.DomUtil.addClass(map.getContainer(),'building-hover')});sub.on('mouseover',()=>{map.getContainer().style.cursor='pointer'});sub.on('mouseout',()=>{map.getContainer().style.cursor='grab'})}});l._matakiId=id;l._matakiProps=p;l.eachLayer(sub=>{sub._matakiId=id;sub._matakiProps=p;sub.bindTooltip(esc(tags.name||tags.building||'Building footprint'),{sticky:true})});layer.addLayer(l);return l}
 function repaintBuilding(id,p){const featureGroup=layer.getLayers().find(x=>x._matakiId===id);if(!featureGroup)return false;const paint=sub=>{if(typeof sub.setStyle==='function')sub.setStyle(style(p));if(typeof sub.eachLayer==='function')sub.eachLayer(child=>paint(child))};paint(featureGroup);return true}
@@ -316,7 +354,7 @@ async function findBuildingAt(lat,lng){
 function distanceToWay(w,lat,lng){const pts=w.geometry||[];let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const xi=pts[i].lon,yi=pts[i].lat,xj=pts[j].lon,yj=pts[j].lat;const hit=((yi>lat)!==(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi+1e-12)+xi);if(hit)inside=!inside;}if(inside)return 0;let best=Infinity;for(const pt of pts){const d=Math.hypot((pt.lat-lat)*111000,(pt.lon-lng)*78000);if(d<best)best=d;}return best}
 function nearestPointOnWay(w,lat,lng){const pts=w.geometry||[];if(!pts.length)return {lat,lng};let best=pts[0],dist=Infinity;for(const pt of pts){const d=Math.hypot((pt.lat-lat)*111000,(pt.lon-lng)*78000);if(d<dist){dist=d;best=pt}}return {lat:best.lat,lng:best.lon}}
 
-$('leadForm').onsubmit=async e=>{e.preventDefault();if(!selected||!dataReady)return;const id=selected.savedId||idOf(selected.p);const old=records[id]||{};const r={...old};['business','address','city','status','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>r[k]=$(k).value);const selectedStatus=r.status;const outgoingStatus=statusValueToDb(selectedStatus);r._outgoingStatus=outgoingStatus;r.lat=selected.ll.lat;r.lng=selected.ll.lng;r.osmId=selected.p?.id||old.osmId;r.osmName=selected.p?.tags?.name||old.osmName;r.suburb=selected.p?.tags?.['addr:suburb']||old.suburb;try{$('leadForm').querySelector('button[type=submit]').disabled=true;status('Saving to Mataki cloud…');toast('Submitting: '+selectedStatus+' → '+outgoingStatus);await persistRecord(r,id,selected.p||null);if(r.status!==selectedStatus)throw new Error('Status mismatch: the form selected '+statusLabel(selectedStatus)+' but Supabase returned '+statusLabel(r.status)+'. No success was reported.');$('status').value=r.status;$('title').textContent=r.business||r.osmName||'Building record';status('Cloud record saved · '+statusLabel(r.status));toast('Status check · selected: '+selectedStatus+' · sent: '+outgoingStatus+' · DB: '+r._dbStatus+' · app: '+r.status)}catch(err){console.error(err);status('Save failed');toast('Could not save record: '+(err.message||'Unknown error'))}finally{$('leadForm').querySelector('button[type=submit]').disabled=false}};
+$('leadForm').onsubmit=async e=>{e.preventDefault();if(!selected||!dataReady)return;const id=selected.savedId||idOf(selected.p);const old=records[id]||{};const r={...old};['business','address','city','status','firstContactDate','declinedDate','declineReason','repitchDate','priority','contact','role','phone','email','visitDate','followDate','quote','racking','notes'].forEach(k=>r[k]=$(k).value);const selectedStatus=r.status;const outgoingStatus=statusValueToDb(selectedStatus);r._outgoingStatus=outgoingStatus;r.lat=selected.ll.lat;r.lng=selected.ll.lng;r.osmId=selected.p?.id||old.osmId;r.osmName=selected.p?.tags?.name||old.osmName;r.suburb=selected.p?.tags?.['addr:suburb']||old.suburb;try{$('leadForm').querySelector('button[type=submit]').disabled=true;status('Saving to Mataki cloud…');toast('Submitting: '+selectedStatus+' → '+outgoingStatus);await persistRecord(r,id,selected.p||null);if(r.status!==selectedStatus)throw new Error('Status mismatch: the form selected '+statusLabel(selectedStatus)+' but Supabase returned '+statusLabel(r.status)+'. No success was reported.');$('status').value=r.status;$('title').textContent=r.business||r.osmName||'Building record';status('Cloud record saved · '+statusLabel(r.status));toast('Status check · selected: '+selectedStatus+' · sent: '+outgoingStatus+' · DB: '+r._dbStatus+' · app: '+r.status)}catch(err){console.error(err);status('Save failed');toast('Could not save record: '+(err.message||'Unknown error'))}finally{$('leadForm').querySelector('button[type=submit]').disabled=false}};
 $('delete').onclick=async()=>{if(!selected)return;const id=selected.savedId||idOf(selected.p);if(!confirm('Delete this prospect record from the Mataki cloud database?'))return;try{const r=records[id];if(r?._cloudId){const q=await supabaseClient.from('buildings').delete().eq('id',r._cloudId).eq('organization_id',organizationId);if(q.error)throw q.error}delete records[id];saveAll();const pin=pinIndex.get(id);if(pin){statusPins.removeLayer(pin);pinIndex.delete(id)}if(selected.p)repaintBuilding(id,selected.p);$('empty').style.display='flex';$('formArea').style.display='none';toast('Record deleted from cloud')}catch(err){toast('Delete failed: '+err.message)}};
 $('directions').onclick=()=>{if(!selected)return;const r=records[selected.savedId||idOf(selected.p)]||{};const ll=selected.ll;if(ll)window.open(`https://www.google.com/maps/dir/?api=1&destination=${ll.lat},${ll.lng}`,'_blank','noopener')};
 $('close').onclick=()=>{$('rightPanel').classList.remove('open')};$('togglePanel').onclick=()=>{$('rightPanel').classList.toggle('open')};
@@ -324,6 +362,7 @@ $('syncNow').onclick=async()=>{try{await reloadCloudRecords();toast('Cloud recor
 $('signOut').onclick=async()=>{await supabaseClient.auth.signOut();records={};currentUser=null;organizationId=null;channel=null;showAuth('You have been signed out.')};
 $('export').onclick=()=>{const data={app:'Mataki Prospecting',version:3,exportedAt:new Date().toISOString(),records};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mataki-prospecting-cloud-backup.json';a.click();URL.revokeObjectURL(a.href);toast('Cloud backup exported')};
 $('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text()),incoming=d.records||d;if(!incoming||typeof incoming!=='object')throw new Error('Invalid record file');if(confirm('Import these records into the Mataki cloud? Existing matching OpenStreetMap building IDs will be updated.')){let count=0;for(const [oldId,value] of Object.entries(incoming)){const r={...value};const p=null;const id=r.osmId?'osm-way-'+r.osmId:oldId;await persistRecord(r,id,p);count++}await reloadCloudRecords();toast(count+' records imported to cloud')}}catch(err){toast('Import failed: '+err.message)}e.target.value=''};
+$('status').addEventListener('change',handleStatusChange);$('declinedDate').addEventListener('change',updateRepitchFields);
 $('authToggle').onclick=()=>{authMode=authMode==='signin'?'signup':'signin';$('authTitle').textContent=authMode==='signin'?'Sign in to Mataki':'Create your Mataki account';$('authIntro').textContent=authMode==='signin'?'Access your Christchurch prospecting records securely from any device.':'Set up the owner account for your Mataki cloud workspace.';$('authSubmit').textContent=authMode==='signin'?'Sign in':'Create account';$('authToggle').textContent=authMode==='signin'?'Create the first Mataki account':'Back to sign in';$('authPassword').value='';authMessage('')};
 $('authForm').onsubmit=async e=>{e.preventDefault();const email=$('authEmail').value.trim(),password=$('authPassword').value;$('authSubmit').disabled=true;authMessage('Connecting securely…');try{if(authMode==='signup'){const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+window.location.pathname}});if(error)throw error;if(data.session){authMessage('Account created. Opening Mataki…');await initializeWorkspace()}else{authMessage('Account created. Check your email to confirm your address, then return here and sign in.')}}else{const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;authMessage('Signed in. Loading your workspace…');await initializeWorkspace()}}catch(err){authMessage(err.message||'Authentication failed.')}finally{$('authSubmit').disabled=false}};
 supabaseClient.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){records={};organizationId=null;currentUser=null;showAuth()}else if(session&&!dataReady){setTimeout(()=>initializeWorkspace(),0)}});
