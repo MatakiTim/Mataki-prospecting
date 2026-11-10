@@ -23,6 +23,10 @@ After the initial schema succeeds, apply these two scripts in order, each in a n
 
 The map-fields migration adds the OpenStreetMap way reference, captured map tags, prospect priority, quote workflow status, racking estimate, visit date and follow-up date. The status migration makes **Unvisited** distinct from **Potential client** on the map. Run each once, in order.
 
+## Apply the Re-pitch Later migration
+
+After migrations 001–003 have succeeded, apply `migrations/202611100004_repitch_later.sql` in a new SQL Editor query. It adds first-contact date, decline date, decline reason and re-pitch date fields, adds `repitch_later` as a valid prospecting status, and installs a database trigger that calculates the re-pitch date as 12 months after the decline date. Run once. The migration is safe to re-run if Supabase reports success but you need to confirm it was applied.
+
 ## What the initial migration creates
 
 - Organisations and organisation memberships
