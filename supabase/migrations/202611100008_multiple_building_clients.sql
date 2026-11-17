@@ -115,3 +115,18 @@ using (public.has_org_role(organization_id, array['owner','admin']));
 
 comment on table public.building_clients is
   'One row per company occupying a physical building. One building may have multiple independent company prospect records.';
+
+-- Enable live updates for the new company-at-building records.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime'
+         and schemaname = 'public'
+         and tablename = 'building_clients'
+     ) then
+    alter publication supabase_realtime add table public.building_clients;
+  end if;
+end;
+$$;
