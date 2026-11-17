@@ -331,6 +331,7 @@ function applyRoleUI(){
   if(save)save.style.display=canEditProspects?'':'none';
  }
  $('delete').style.display=isOwnerAdmin?'':'none';
+ $('addOccupant').style.display=canEditProspects?'':'none';
 }
 function startRealtime(){
  if(channel) supabaseClient.removeChannel(channel);
@@ -428,7 +429,9 @@ async function persistRecord(r,id,p=null){
  let contactId=r._contactId||null;
  if((r.contact||'').trim()){
   if(!contactId){
-   const f=await supabaseClient.from('contacts').select('id').eq('organization_id',organizationId).eq('building_id',buildingId).eq('business_id',businessId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+   let contactQuery=supabaseClient.from('contacts').select('id').eq('organization_id',organizationId).eq('building_id',buildingId);
+   contactQuery=businessId?contactQuery.eq('business_id',businessId):contactQuery.is('business_id',null);
+   const f=await contactQuery.order('created_at',{ascending:false}).limit(1).maybeSingle();
    if(f.error)throw f.error;
    if(f.data)contactId=f.data.id;
   }
