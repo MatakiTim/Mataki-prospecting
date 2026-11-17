@@ -126,7 +126,7 @@ begin
          and schemaname = 'public'
          and tablename = 'building_clients'
      ) then
-    alter publication supabase_realtime add table public.building_clients;
+    execute 'alter publication supabase_realtime add table public.building_clients';
   end if;
 end;
 $$;
