@@ -364,15 +364,15 @@ async function persistRecord(r,id,p=null){
  const osmId=r.osmId??p?.id??null;
  const buildingPayload={
   organization_id:organizationId,
-  building_name:r.osmName||p?.tags?.name||r.address||'Building',
+  building_name:r.osmName||p?.tags?.name||undefined,
   street_address:r.address||null,
   suburb:r.suburb||p?.tags?.['addr:suburb']||null,
   city:(r.city||p?.tags?.['addr:city']||p?.tags?.['addr:town']||p?.tags?.['addr:village']||'Unspecified'),
   latitude:Number.isFinite(Number(r.lat))?Number(r.lat):null,
   longitude:Number.isFinite(Number(r.lng))?Number(r.lng):null,
   osm_way_id:osmId?Number(osmId):null,
-  osm_name:r.osmName||p?.tags?.name||null,
-  osm_tags:p?.tags||null
+  osm_name:r.osmName||p?.tags?.name||undefined,
+  osm_tags:p?.tags||undefined
  };
  if(p&&p.geometry){
   const ring=p.geometry.map(pt=>[pt.lon,pt.lat]);
@@ -522,7 +522,7 @@ function listRecords(){
   if(Number.isFinite(Number(r.lat))&&Number.isFinite(Number(r.lng))){
    map.setView([Number(r.lat),Number(r.lng)],18);
    openSaved(r,node.dataset.id);
-   const pin=pinIndex.get(node.dataset.id);
+   const pin=pinIndex.get(r._buildingId||r.buildingDbId);
    if(pin)pin.openTooltip();
   }
  });
