@@ -7,20 +7,27 @@ from datetime import datetime, timezone
 
 import cv2
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageOps
+
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    HEIC_AVAILABLE = True
+except ImportError:
+    HEIC_AVAILABLE = False
 
 st.set_page_config(
-    page_title="Mataki Drone AI | v0.1",
+    page_title="Mataki Drone AI | v0.2",
     page_icon="🛠️",
     layout="wide",
 )
 
 st.title("Mataki Drone AI")
-st.caption("Version 0.1 · Drone footage ingestion and frame extraction")
+st.caption("Version 0.2 · Image and drone footage ingestion")
 st.info(
-    "Prototype milestone 1: upload a drone video, inspect its properties, "
-    "extract still frames and download them for review. AI component recognition "
-    "and calibrated measurements are not enabled yet."
+    "Prototype milestone 1: upload still photographs or drone video, inspect "
+    "image/video properties, extract video frames and download review images. "
+    "AI component recognition and calibrated measurements are not enabled yet."
 )
 
 with st.sidebar:
@@ -39,15 +46,101 @@ with st.sidebar:
         value=120,
         step=10,
     )
-    st.caption("For an initial test, use a 30–60 second clip and a 2-second interval.")
+    st.caption("For an initial video test, use a 30–60 second clip and a 2-second interval.")
 
-uploaded = st.file_uploader(
-    "Upload DJI Mavic 2 Pro footage",
-    type=["mp4", "mov", "avi", "m4v"],
-    help="The file is processed by this local app. Keep your original video unchanged.",
+st.subheader("Upload existing racking photographs")
+st.caption("You can select multiple photographs at once. Supported formats include PNG, JPG/JPEG, WEBP, BMP and TIFF.")
+if HEIC_AVAILABLE:
+    st.caption("HEIC/HEIF support is enabled.")
+else:
+    st.caption("HEIC/HEIF support will activate after the optional image-format package is installed.")
+
+image_uploads = st.file_uploader(
+    "Choose racking image files",
+    type=["png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff", "heic", "heif"],
+    accept_multiple_files=True,
+    key="racking_image_uploads",
+    help="Images are processed locally by this app. Original uploaded files are not changed.",
 )
 
-def extract_frames(video_bytes: bytes, interval: float, limit: int):
+if image_uploads:
+    st.write(f"**Photographs selected:** {len(image_uploads)}")
+    if st.button("Load and review photographs", type="primary", key="process_images"):
+        reviewed_images = []
+        image_errors = []
+        for uploaded_image in image_uploads:
+            try:
+                uploaded_image.seek(0)
+                with Image.open(uploaded_image) as source:
+                    image = ImageOps.exif_transpose(source).convert("RGB")
+                    reviewed_images.append({
+                        "filename": uploaded_image.name,
+                        "width": image.width,
+                        "height": image.height,
+                        "image": image.copy(),
+                    })
+            except Exception as exc:
+                image_errors.append(f"{uploaded_image.name}: {exc}")
+
+        st.session_state["drone_ai_still_images"] = reviewed_images
+        st.session_state["drone_ai_image_errors"] = image_errors
+
+still_images = st.session_state.get("drone_ai_still_images", [])
+image_errors = st.session_state.get("drone_ai_image_errors", [])
+
+if image_errors:
+    for error in image_errors:
+        st.error(f"Could not open image — {error}")
+    if any(name.lower().endswith((".heic", ".heif")) for name in [u.name for u in image_uploads or []]) and not HEIC_AVAILABLE:
+        st.warning("To enable HEIC/HEIF, install the pillow-heif package in this app's active environment, then restart Streamlit.")
+
+if still_images:
+    st.subheader("Photograph review")
+    st.caption("These are original still photographs converted for display. No AI analysis or measurements have been performed.")
+    image_cols = st.columns(3)
+    for idx, item in enumerate(still_images):
+        with image_cols[idx % 3]:
+            st.image(
+                item["image"],
+                caption=f"{item['filename']} · {item['width']} × {item['height']} px",
+                use_container_width=True,
+            )
+
+    image_archive = io.BytesIO()
+    image_manifest = {
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "prototype": "Mataki Drone AI v0.2",
+        "image_count": len(still_images),
+        "images": [
+            {"filename": item["filename"], "width_pixels": item["width"], "height_pixels": item["height"]}
+            for item in still_images
+        ],
+    }
+    with zipfile.ZipFile(image_archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("image_metadata.json", json.dumps(image_manifest, indent=2))
+        for idx, item in enumerate(still_images, start=1):
+            image_buffer = io.BytesIO()
+            item["image"].save(image_buffer, format="JPEG", quality=95)
+            zf.writestr(f"images/image_{idx:03d}.jpg", image_buffer.getvalue())
+
+    st.download_button(
+        "Download reviewed photographs and metadata (ZIP)",
+        data=image_archive.getvalue(),
+        file_name="mataki_drone_ai_v02_images.zip",
+        mime="application/zip",
+        key="download_images",
+    )
+
+st.divider()
+st.subheader("Upload DJI Mavic 2 Pro footage")
+uploaded = st.file_uploader(
+    "Choose a drone video",
+    type=["mp4", "mov", "avi", "m4v"],
+    help="The video is processed by this local app. Keep your original video unchanged.",
+    key="drone_video_upload",
+)
+
+def extract_frames(video_bytes: bytes, filename: str, interval: float, limit: int):
     import tempfile
     from pathlib import Path
 
@@ -57,7 +150,8 @@ def extract_frames(video_bytes: bytes, interval: float, limit: int):
     metadata = {}
 
     try:
-        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_file:
+        suffix = Path(filename).suffix or ".mp4"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
             temp_file.write(video_bytes)
             temp_path = Path(temp_file.name)
 
@@ -74,7 +168,7 @@ def extract_frames(video_bytes: bytes, interval: float, limit: int):
         duration = frame_count / fps if fps > 0 else 0
 
         metadata = {
-            "filename": uploaded.name if uploaded else "video",
+            "filename": filename,
             "frames_per_second": round(fps, 3),
             "source_frame_count": frame_count,
             "width_pixels": width,
@@ -82,7 +176,7 @@ def extract_frames(video_bytes: bytes, interval: float, limit: int):
             "duration_seconds": round(duration, 2),
             "extraction_interval_seconds": interval,
             "extracted_at_utc": datetime.now(timezone.utc).isoformat(),
-            "prototype": "Mataki Drone AI v0.1",
+            "prototype": "Mataki Drone AI v0.2",
         }
 
         step = max(1, int(round(fps * interval))) if fps > 0 else 1
@@ -91,18 +185,15 @@ def extract_frames(video_bytes: bytes, interval: float, limit: int):
             ok, frame = cap.read()
             if not ok:
                 break
-
             if frame_index % step == 0:
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 timestamp = frame_index / fps if fps > 0 else 0
-                frames.append(
-                    {
-                        "number": len(frames) + 1,
-                        "source_frame": frame_index,
-                        "timestamp_seconds": round(timestamp, 3),
-                        "image": Image.fromarray(rgb),
-                    }
-                )
+                frames.append({
+                    "number": len(frames) + 1,
+                    "source_frame": frame_index,
+                    "timestamp_seconds": round(timestamp, 3),
+                    "image": Image.fromarray(rgb),
+                })
             frame_index += 1
 
         return metadata, frames
@@ -119,10 +210,10 @@ if uploaded:
     file_bytes = uploaded.getvalue()
     st.write(f"**File:** {uploaded.name} · **Size:** {len(file_bytes) / (1024 * 1024):.1f} MB")
 
-    if st.button("Analyse video and extract frames", type="primary"):
+    if st.button("Analyse video and extract frames", type="primary", key="process_video"):
         with st.spinner("Reading video and extracting frames…"):
             try:
-                metadata, frames = extract_frames(file_bytes, interval_seconds, max_frames)
+                metadata, frames = extract_frames(file_bytes, uploaded.name, interval_seconds, max_frames)
                 st.session_state["drone_ai_metadata"] = metadata
                 st.session_state["drone_ai_frames"] = frames
             except Exception as exc:
@@ -139,8 +230,7 @@ if metadata and frames:
     c3.metric("Resolution", f"{metadata['width_pixels']} × {metadata['height_pixels']}")
     c4.metric("Frames extracted", str(len(frames)))
 
-    st.subheader("Extracted frames")
-    st.caption("Review these images for focus, lighting, motion blur and coverage of the rack.")
+    st.subheader("Extracted video frames")
     cols = st.columns(3)
     for idx, item in enumerate(frames):
         with cols[idx % 3]:
@@ -162,23 +252,16 @@ if metadata and frames:
     st.download_button(
         "Download extracted frames and metadata (ZIP)",
         data=archive.getvalue(),
-        file_name="mataki_drone_ai_v01_frames.zip",
+        file_name="mataki_drone_ai_v02_frames.zip",
         mime="application/zip",
         type="primary",
+        key="download_video_frames",
     )
 else:
-    st.subheader("Ready for your first test flight")
-    st.markdown(
-        """
-        1. Capture a short, steady pass along one pallet-racking aisle.
-        2. Upload the original video above.
-        3. Extract frames and review the images.
-        4. Download the ZIP and keep it with the original source video.
-        """
-    )
+    st.caption("Video upload and frame extraction are ready when you have drone footage.")
 
 st.divider()
 st.caption(
-    "Mataki Drone AI v0.1 is an experimental data-ingestion tool. "
+    "Mataki Drone AI v0.2 is an experimental data-ingestion tool. "
     "It does not identify defects, calculate certified dimensions or determine compliance."
 )
